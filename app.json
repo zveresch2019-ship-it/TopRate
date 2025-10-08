@@ -1,0 +1,42 @@
+{
+  "expo": {
+    "name": "Футбольный Рейтинг",
+    "slug": "football-rating-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#2196F3"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.footballrating.app",
+      "buildNumber": "1.0.0"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#FFFFFF"
+      },
+      "package": "com.footballrating.app",
+      "versionCode": 1
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [],
+    "scheme": "football-rating",
+    "extra": {
+      "eas": {
+        "projectId": "a94cbec5-e953-443c-a2e8-ac678a14f93e"
+      }
+    },
+    "owner": "veresch"
+  }
+}

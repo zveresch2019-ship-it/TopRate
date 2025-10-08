@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ТопРейт - Рейтинг игроков</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #2196F3, #1976D2);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .title {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .subtitle {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        
+        .login-form {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        .form-title {
+            font-size: 18px;
+            color: #333;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .input-group {
+            margin-bottom: 15px;
+        }
+        
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .input-group input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        
+        .btn {
+            width: 100%;
+            padding: 12px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-bottom: 10px;
+        }
+        
+        .btn:hover {
+            background: #45a049;
+        }
+        
+        .btn-secondary {
+            background: #2196F3;
+        }
+        
+        .btn-secondary:hover {
+            background: #1976D2;
+        }
+        
+        .main-app {
+            display: none;
+        }
+        
+        .nav {
+            display: flex;
+            background: #2196F3;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+        
+        .nav-item {
+            flex: 1;
+            padding: 15px;
+            text-align: center;
+            color: white;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        .nav-item.active {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
+        .nav-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .content {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 20px;
+        }
+        
+        .stat {
+            text-align: center;
+        }
+        
+        .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2196F3;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+        
+        .welcome {
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .welcome-title {
+            font-size: 18px;
+            color: #2196F3;
+            margin-bottom: 10px;
+        }
+        
+        .welcome-text {
+            color: #666;
+            line-height: 1.6;
+        }
+        
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Заголовок -->
+        <div class="header">
+            <div class="title">🏆 ТопРейт</div>
+            <div class="subtitle">Индивидуальный прогресс в командном спорте</div>
+        </div>
+
+        <!-- Форма входа -->
+        <div id="loginForm" class="login-form">
+            <div class="form-title">Вход в систему</div>
+            <div class="input-group">
+                <label for="username">Имя пользователя:</label>
+                <input type="text" id="username" placeholder="Введите имя">
+            </div>
+            <button class="btn" onclick="login()">Войти</button>
+            <button class="btn btn-secondary" onclick="loginAsGuest()">Войти как гость</button>
+        </div>
+
+        <!-- Основное приложение -->
+        <div id="mainApp" class="main-app">
+            <!-- Навигация -->
+            <div class="nav">
+                <div class="nav-item active" onclick="showScreen('home')">🏠 Главная</div>
+                <div class="nav-item" onclick="showScreen('players')">👥 Игроки</div>
+                <div class="nav-item" onclick="showScreen('matches')">⚽ Матчи</div>
+            </div>
+
+            <!-- Контент -->
+            <div class="content">
+                <!-- Главная -->
+                <div id="homeScreen">
+                    <div class="stats">
+                        <div class="stat">
+                            <div class="stat-number" id="totalPlayers">0</div>
+                            <div class="stat-label">Игроков</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-number" id="totalMatches">0</div>
+                            <div class="stat-label">Матчей</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-number" id="averageRating">1500</div>
+                            <div class="stat-label">Средний рейтинг</div>
+                        </div>
+                    </div>
+                    
+                    <div class="welcome">
+                        <div class="welcome-title">Добро пожаловать в ТопРейт!</div>
+                        <div class="welcome-text">
+                            Это система рейтинга игроков для командных видов спорта.<br>
+                            Добавьте игроков и создавайте матчи для отслеживания их прогресса.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Игроки -->
+                <div id="playersScreen" class="hidden">
+                    <h3>Управление игроками</h3>
+                    <p>Здесь будет список игроков...</p>
+                </div>
+
+                <!-- Матчи -->
+                <div id="matchesScreen" class="hidden">
+                    <h3>Управление матчами</h3>
+                    <p>Здесь будет список матчей...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentUser = null;
+        let players = [];
+        let matches = [];
+
+        function login() {
+            const username = document.getElementById('username').value.trim();
+            if (username) {
+                currentUser = { username };
+                showMainApp();
+            } else {
+                alert('Введите имя пользователя');
+            }
+        }
+
+        function loginAsGuest() {
+            currentUser = { username: 'Гость' };
+            showMainApp();
+        }
+
+        function showMainApp() {
+            document.getElementById('loginForm').style.display = 'none';
+            document.getElementById('mainApp').style.display = 'block';
+        }
+
+        function showScreen(screenName) {
+            // Скрыть все экраны
+            document.querySelectorAll('[id$="Screen"]').forEach(screen => {
+                screen.classList.add('hidden');
+            });
+            
+            // Убрать активный класс с навигации
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            
+            // Показать выбранный экран
+            document.getElementById(screenName + 'Screen').classList.remove('hidden');
+            
+            // Добавить активный класс к навигации
+            event.target.classList.add('active');
+        }
+
+        // Инициализация
+        console.log('ТопРейт - Рейтинг игроков загружен!');
+    </script>
+</body>
+</html>

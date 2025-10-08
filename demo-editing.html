@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Демо редактирования игроков и матчей</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 20px; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .container {
+            background: rgba(255,255,255,0.1);
+            padding: 30px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .feature { 
+            border: 1px solid rgba(255,255,255,0.3); 
+            padding: 20px; 
+            margin: 20px 0; 
+            border-radius: 10px;
+            background: rgba(255,255,255,0.1);
+        }
+        .btn { 
+            background: #4CAF50; 
+            color: white; 
+            border: none; 
+            padding: 12px 24px; 
+            margin: 10px; 
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .btn:hover { background: #45a049; }
+        .status { font-size: 28px; font-weight: bold; color: #4CAF50; text-align: center; }
+        .emoji { font-size: 40px; }
+        .demo-section {
+            background: rgba(0,0,0,0.2);
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        .player-card, .match-card {
+            background: rgba(255,255,255,0.2);
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .edit-btn, .delete-btn {
+            padding: 8px 12px;
+            margin: 0 5px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .edit-btn { background: #2196F3; color: white; }
+        .delete-btn { background: #f44336; color: white; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="emoji">🎉 РЕДАКТИРОВАНИЕ ГОТОВО! 🎉</h1>
+        
+        <div class="status">✅ ВСЕ ФУНКЦИИ РЕАЛИЗОВАНЫ</div>
+        
+        <div class="demo-section">
+            <h2>🏆 Демо редактирования игроков:</h2>
+            
+            <div class="player-card">
+                <div>
+                    <strong>🥇 Иван Петров</strong><br>
+                    <small>Рейтинг: 1850 | Матчей: 15 | Побед: 10</small>
+                </div>
+                <div>
+                    <button class="edit-btn" onclick="editPlayer('Иван Петров')">✏️</button>
+                    <button class="delete-btn" onclick="deletePlayer('Иван Петров')">🗑️</button>
+                </div>
+            </div>
+            
+            <div class="player-card">
+                <div>
+                    <strong>🥈 Алексей Сидоров</strong><br>
+                    <small>Рейтинг: 1720 | Матчей: 12 | Побед: 8</small>
+                </div>
+                <div>
+                    <button class="edit-btn" onclick="editPlayer('Алексей Сидоров')">✏️</button>
+                    <button class="delete-btn" onclick="deletePlayer('Алексей Сидоров')">🗑️</button>
+                </div>
+            </div>
+            
+            <div class="player-card">
+                <div>
+                    <strong>🥉 Михаил Козлов</strong><br>
+                    <small>Рейтинг: 1650 | Матчей: 18 | Побед: 9</small>
+                </div>
+                <div>
+                    <button class="edit-btn" onclick="editPlayer('Михаил Козлов')">✏️</button>
+                    <button class="delete-btn" onclick="deletePlayer('Михаил Козлов')">🗑️</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="demo-section">
+            <h2>⚽ Демо редактирования матчей:</h2>
+            
+            <div class="match-card">
+                <div>
+                    <strong>Иван Петров vs Алексей Сидоров</strong><br>
+                    <small>15.09.2025 | Чемпионат | 2:1</small>
+                </div>
+                <div>
+                    <button class="edit-btn" onclick="editMatch('match1')">✏️</button>
+                    <button class="delete-btn" onclick="deleteMatch('match1')">🗑️</button>
+                </div>
+            </div>
+            
+            <div class="match-card">
+                <div>
+                    <strong>Михаил Козлов vs Иван Петров</strong><br>
+                    <small>12.09.2025 | Кубок | 1:3</small>
+                </div>
+                <div>
+                    <button class="edit-btn" onclick="editMatch('match2')">✏️</button>
+                    <button class="delete-btn" onclick="deleteMatch('match2')">🗑️</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="feature">
+            <h3>🚀 Как использовать в React Native приложении:</h3>
+            <ol>
+                <li><strong>Редактирование игроков:</strong>
+                    <ul>
+                        <li>Вкладка "⚽ Игроки" → кнопка "✏️" → изменить данные → "Сохранить"</li>
+                    </ul>
+                </li>
+                <li><strong>Редактирование матчей:</strong>
+                    <ul>
+                        <li>Вкладка "⚽ Матчи" → прокрутить вниз → кнопка "✏️" → изменить → "Обновить матч"</li>
+                    </ul>
+                </li>
+            </ol>
+        </div>
+
+        <div class="status">🎯 ГОТОВО К ТЕСТИРОВАНИЮ!</div>
+        
+        <p style="text-align: center; font-size: 18px;">
+            <strong>React Native приложение запускается...</strong><br>
+            Откройте <a href="http://localhost:19006" style="color: #4CAF50;">http://localhost:19006</a> в браузере
+        </p>
+    </div>
+
+    <script>
+        function editPlayer(name) {
+            alert(`Редактирование игрока: ${name}\n\nВ React Native приложении откроется модальное окно с полями:\n• Имя игрока\n• Рейтинг (1000-2000)\n• Кнопки "Сохранить" и "Отмена"`);
+        }
+        
+        function deletePlayer(name) {
+            if (confirm(`Удалить игрока: ${name}?\n\nВсе его матчи также будут удалены.`)) {
+                alert(`Игрок ${name} удален!`);
+            }
+        }
+        
+        function editMatch(matchId) {
+            alert(`Редактирование матча: ${matchId}\n\nВ React Native приложении:\n• Загрузятся данные матча в форму\n• Можно изменить команды, счет, турнир\n• Кнопка изменится на "Обновить матч"`);
+        }
+        
+        function deleteMatch(matchId) {
+            if (confirm(`Удалить матч: ${matchId}?\n\nВсе рейтинги будут пересчитаны.`)) {
+                alert(`Матч ${matchId} удален!`);
+            }
+        }
+    </script>
+</body>
+</html>

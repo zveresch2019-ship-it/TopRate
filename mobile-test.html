@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Мобильный тест - Футбольный Рейтинг</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 375px;
+            margin: 0 auto;
+            background-color: white;
+            min-height: 100vh;
+        }
+        
+        .header {
+            background-color: #2196F3;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            color: white;
+            margin: 0;
+            font-size: 24px;
+        }
+        
+        .navigation {
+            display: flex;
+            background-color: #f0f0f0;
+            padding: 10px;
+        }
+        
+        .nav-button {
+            flex: 1;
+            padding: 10px;
+            margin: 2px;
+            border-radius: 5px;
+            text-align: center;
+            background-color: #e0e0e0;
+            text-decoration: none;
+            color: black;
+            font-size: 14px;
+        }
+        
+        .nav-button.active {
+            background-color: #2196F3;
+            color: white;
+        }
+        
+        .content {
+            padding: 15px;
+        }
+        
+        .season-indicator {
+            background-color: #2196F3;
+            margin: 15px;
+            padding: 12px;
+            border-radius: 10px;
+            text-align: center;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .stats-container {
+            display: flex;
+            margin: 15px;
+            gap: 10px;
+        }
+        
+        .stat-card {
+            flex: 1;
+            background-color: white;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+        
+        .buttons-container {
+            margin: 15px;
+        }
+        
+        .button {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+            color: white;
+            font-weight: bold;
+            margin-bottom: 8px;
+            border: none;
+            font-size: 14px;
+        }
+        
+        .button.share {
+            background-color: #4CAF50;
+        }
+        
+        .button.new-season {
+            background-color: #FF9800;
+        }
+        
+        .button.season-stats {
+            background-color: #9C27B0;
+        }
+        
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        
+        .modal-content {
+            background-color: white;
+            border-radius: 15px;
+            padding: 15px;
+            margin: 10px;
+            max-height: 85%;
+            width: 95%;
+            overflow-y: auto;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .modal-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .close-button {
+            background: none;
+            border: none;
+            font-size: 20px;
+            color: #666;
+            cursor: pointer;
+        }
+        
+        .season-item {
+            background-color: #f0f0f0;
+            padding: 12px;
+            margin: 4px 0;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+        }
+        
+        .season-name {
+            font-size: 14px;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .season-date {
+            font-size: 12px;
+            color: #666;
+            margin-top: 2px;
+        }
+        
+        .season-matches {
+            font-size: 12px;
+            color: #2196F3;
+            margin-top: 2px;
+        }
+        
+        .table {
+            background-color: white;
+            border-radius: 10px;
+            border: 1px solid #e0e0e0;
+            overflow: hidden;
+        }
+        
+        .table-header {
+            display: flex;
+            background-color: #2196F3;
+            padding: 10px 4px;
+        }
+        
+        .table-header-text {
+            color: white;
+            font-size: 10px;
+            font-weight: bold;
+            text-align: center;
+        }
+        
+        .table-row {
+            display: flex;
+            padding: 8px 4px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .table-cell {
+            font-size: 10px;
+            text-align: center;
+            color: #333;
+        }
+        
+        .col1 { width: 30px; }
+        .col2 { width: 100px; text-align: left; }
+        .col3 { width: 60px; }
+        .col4 { width: 100px; }
+        
+        .positive { color: #4CAF50; font-weight: bold; }
+        .negative { color: #F44336; font-weight: bold; }
+        .neutral { color: #666; }
+        
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏆 Футбольный Рейтинг</h1>
+        </div>
+        
+        <div class="navigation">
+            <a href="#" class="nav-button active">🏠 Главная</a>
+            <a href="#" class="nav-button">👥 Игроки</a>
+            <a href="#" class="nav-button">⚽ Матчи</a>
+        </div>
+        
+        <div class="content">
+            <div class="season-indicator">
+                🏆 Сезон 2 (01-2025)
+            </div>
+            
+            <div class="stats-container">
+                <div class="stat-card">
+                    <div class="stat-number">8</div>
+                    <div class="stat-label">Игроков</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">12</div>
+                    <div class="stat-label">Матчей</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">1547</div>
+                    <div class="stat-label">Средний рейтинг</div>
+                </div>
+            </div>
+            
+            <div class="buttons-container">
+                <button class="button share">🖨️ Печать/PDF рейтинга</button>
+                <button class="button new-season">🆕 Новый сезон</button>
+                <button class="button season-stats" onclick="showSeasonStats()">📊 Статистика сезонов</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Модальное окно статистики сезонов -->
+    <div id="seasonModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">📊 Статистика сезонов</div>
+                <button class="close-button" onclick="hideSeasonStats()">✕</button>
+            </div>
+            
+            <div id="seasonsList">
+                <div class="season-item" onclick="showSeasonDetails('season1')">
+                    <div class="season-name">Сезон 1 (12-2024)</div>
+                    <div class="season-date">12/2024 - 01/2025</div>
+                    <div class="season-matches">Матчей: 15</div>
+                </div>
+            </div>
+            
+            <div id="seasonDetails" class="hidden">
+                <button class="button" onclick="backToSeasons()" style="background-color: #f0f0f0; color: #333; margin-bottom: 15px;">← Назад к сезонам</button>
+                
+                <div style="background-color: #f0f0f0; padding: 12px; border-radius: 8px; margin-bottom: 12px;">
+                    <div style="font-size: 16px; font-weight: bold; color: #333; margin-bottom: 4px;">Сезон 1 (12-2024)</div>
+                    <div style="font-size: 12px; color: #666; margin-bottom: 2px;">Период: 12/2024 - 01/2025</div>
+                    <div style="font-size: 12px; color: #666; margin-bottom: 2px;">Матчей: 15</div>
+                </div>
+                
+                <div class="table">
+                    <div class="table-header">
+                        <div class="table-header-text col1">№</div>
+                        <div class="table-header-text col2">Имя</div>
+                        <div class="table-header-text col3">Матчи</div>
+                        <div class="table-header-text col4">Изменение</div>
+                    </div>
+                    
+                    <div class="table-row">
+                        <div class="table-cell col1">1</div>
+                        <div class="table-cell col2">Алексей</div>
+                        <div class="table-cell col3">8</div>
+                        <div class="table-cell col4 positive">+45</div>
+                    </div>
+                    
+                    <div class="table-row">
+                        <div class="table-cell col1">2</div>
+                        <div class="table-cell col2">Дмитрий</div>
+                        <div class="table-cell col3">7</div>
+                        <div class="table-cell col4 positive">+32</div>
+                    </div>
+                    
+                    <div class="table-row">
+                        <div class="table-cell col1">3</div>
+                        <div class="table-cell col2">Сергей</div>
+                        <div class="table-cell col3">6</div>
+                        <div class="table-cell col4 negative">-15</div>
+                    </div>
+                    
+                    <div class="table-row">
+                        <div class="table-cell col1">4</div>
+                        <div class="table-cell col2">Андрей</div>
+                        <div class="table-cell col3">5</div>
+                        <div class="table-cell col4 positive">+18</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        function showSeasonStats() {
+            document.getElementById('seasonModal').classList.remove('hidden');
+        }
+        
+        function hideSeasonStats() {
+            document.getElementById('seasonModal').classList.add('hidden');
+            backToSeasons();
+        }
+        
+        function showSeasonDetails(seasonId) {
+            document.getElementById('seasonsList').classList.add('hidden');
+            document.getElementById('seasonDetails').classList.remove('hidden');
+        }
+        
+        function backToSeasons() {
+            document.getElementById('seasonsList').classList.remove('hidden');
+            document.getElementById('seasonDetails').classList.add('hidden');
+        }
+    </script>
+</body>
+</html>
+
+
