@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ТопРейт - Рейтинг футболистов</title>
+    <meta name="description" content="ТопРейт - приложение для расчета рейтинга футболистов. Отслеживайте прогресс каждого игрока в режиме реального времени.">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #fff;
+        }
+        
+        .hero {
+            background: linear-gradient(135deg, #0051D5 0%, #007AFF 100%);
+            color: white;
+            text-align: center;
+            padding: 80px 20px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .hero::before {
+            content: '⚽';
+            position: absolute;
+            font-size: 200px;
+            opacity: 0.1;
+            top: -50px;
+            right: -50px;
+            transform: rotate(-15deg);
+        }
+        
+        .hero-content {
+            max-width: 800px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .logo {
+            font-size: 80px;
+            margin-bottom: 20px;
+            animation: bounce 2s infinite;
+        }
+        
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        h1 {
+            font-size: 48px;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+        
+        .tagline {
+            font-size: 20px;
+            margin-bottom: 40px;
+            opacity: 0.95;
+        }
+        
+        .app-store-btn {
+            display: inline-flex;
+            align-items: center;
+            background: #000;
+            color: white;
+            padding: 15px 30px;
+            border-radius: 12px;
+            text-decoration: none;
+            font-size: 18px;
+            font-weight: 600;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+        
+        .app-store-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
+        }
+        
+        .app-store-btn svg {
+            width: 30px;
+            height: 30px;
+            margin-right: 12px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 60px 20px;
+        }
+        
+        .section {
+            margin-bottom: 80px;
+        }
+        
+        .section-title {
+            font-size: 36px;
+            color: #0051D5;
+            text-align: center;
+            margin-bottom: 50px;
+            font-weight: bold;
+        }
+        
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 40px;
+        }
+        
+        .feature {
+            text-align: center;
+            padding: 30px;
+            background: #F5F6FA;
+            border-radius: 24px;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        
+        .feature:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 81, 213, 0.15);
+        }
+        
+        .feature-icon {
+            font-size: 60px;
+            margin-bottom: 20px;
+        }
+        
+        .feature h3 {
+            font-size: 24px;
+            color: #0051D5;
+            margin-bottom: 15px;
+        }
+        
+        .feature p {
+            color: #666;
+            font-size: 16px;
+            line-height: 1.6;
+        }
+        
+        .screenshots {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 30px;
+            margin-top: 40px;
+        }
+        
+        .screenshot {
+            background: #F5F6FA;
+            border-radius: 24px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        .screenshot-placeholder {
+            width: 100%;
+            height: 400px;
+            background: linear-gradient(135deg, #0051D5 0%, #007AFF 100%);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+        
+        .screenshot h4 {
+            font-size: 18px;
+            color: #0051D5;
+            margin-bottom: 10px;
+        }
+        
+        .screenshot p {
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .cta {
+            background: linear-gradient(135deg, #FF9500 0%, #FF6B00 100%);
+            color: white;
+            text-align: center;
+            padding: 80px 20px;
+            border-radius: 24px;
+            margin: 60px 0;
+        }
+        
+        .cta h2 {
+            font-size: 42px;
+            margin-bottom: 20px;
+        }
+        
+        .cta p {
+            font-size: 20px;
+            margin-bottom: 30px;
+            opacity: 0.95;
+        }
+        
+        .footer {
+            background: #0051D5;
+            color: white;
+            text-align: center;
+            padding: 40px 20px;
+        }
+        
+        .footer-links {
+            margin-bottom: 20px;
+        }
+        
+        .footer-links a {
+            color: white;
+            text-decoration: none;
+            margin: 0 15px;
+            font-size: 16px;
+            opacity: 0.9;
+            transition: opacity 0.2s;
+        }
+        
+        .footer-links a:hover {
+            opacity: 1;
+            text-decoration: underline;
+        }
+        
+        .lang-switch {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+        
+        .lang-btn {
+            background: white;
+            color: #0051D5;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 12px;
+            margin: 0 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            transition: transform 0.2s;
+        }
+        
+        .lang-btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .lang-btn.active {
+            background: #0051D5;
+            color: white;
+        }
+
+        @media (max-width: 768px) {
+            h1 { font-size: 36px; }
+            .section-title { font-size: 28px; }
+            .cta h2 { font-size: 32px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="lang-switch">
+        <button class="lang-btn active" onclick="switchLang('ru')">RU</button>
+        <button class="lang-btn" onclick="switchLang('en')">EN</button>
+    </div>
+
+    <div id="content-ru">
+        <div class="hero">
+            <div class="hero-content">
+                <div class="logo">⭐</div>
+                <h1>ТопРейт</h1>
+                <p class="tagline">Индивидуальный прогресс каждого игрока</p>
+                <a href="#" class="app-store-btn">
+                    <svg viewBox="0 0 30 30" fill="currentColor">
+                        <path d="M25.565 9.785c-.123.077-3.051 1.702-3.051 5.305 0 4.154 3.652 5.607 3.738 5.63-.023.062-.587 2.012-1.932 3.985-1.199 1.77-2.43 3.532-4.363 3.532-1.934 0-2.491-1.137-4.656-1.137-2.126 0-2.86 1.137-4.656 1.137-1.796 0-3.012-1.608-4.363-3.532-1.511-2.151-2.714-5.569-2.714-8.778 0-5.16 3.356-7.897 6.651-7.897 1.75 0 3.203 1.145 4.302 1.145 1.06 0 2.714-1.145 4.717-1.145.771 0 3.577.062 5.327 2.755zm-7.636-5.744c.846-.976 1.444-2.329 1.444-3.682 0-.193-.023-.386-.061-.54-1.383.062-3.012.923-4.01 2.083-.77.855-1.444 2.083-1.444 3.437 0 .193.039.386.062.463.108.023.27.039.416.039 1.23 0 2.737-.823 3.593-1.8z"/>
+                    </svg>
+                    Скачать в App Store
+                </a>
+            </div>
+        </div>
+
+        <div class="container">
+            <section class="section">
+                <h2 class="section-title">Возможности приложения</h2>
+                <div class="features">
+                    <div class="feature">
+                        <div class="feature-icon">📊</div>
+                        <h3>Расчет рейтинга</h3>
+                        <p>Автоматический расчет рейтинга на основе системы Эло с учетом силы команд и результатов матчей</p>
+                    </div>
+                    <div class="feature">
+                        <div class="feature-icon">👥</div>
+                        <h3>Управление игроками</h3>
+                        <p>Добавляйте игроков, отслеживайте их прогресс и статистику в удобной таблице</p>
+                    </div>
+                    <div class="feature">
+                        <div class="feature-icon">⚽</div>
+                        <h3>История матчей</h3>
+                        <p>Сохраняйте результаты всех матчей и просматривайте подробную историю игр</p>
+                    </div>
+                    <div class="feature">
+                        <div class="feature-icon">📈</div>
+                        <h3>Статистика</h3>
+                        <p>Смотрите общую статистику: количество игроков, матчей, средний рейтинг и топ-3 игроков</p>
+                    </div>
+                    <div class="feature">
+                        <div class="feature-icon">🌍</div>
+                        <h3>Два языка</h3>
+                        <p>Поддержка русского и английского языков с удобным переключением</p>
+                    </div>
+                    <div class="feature">
+                        <div class="feature-icon">🔒</div>
+                        <h3>Конфиденциальность</h3>
+                        <p>Все данные хранятся только на вашем устройстве. Никаких серверов и передачи данных</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section">
+                <h2 class="section-title">Интерфейс приложения</h2>
+                <div class="screenshots">
+                    <div class="screenshot">
+                        <div class="screenshot-placeholder">🏠</div>
+                        <h4>Главная</h4>
+                        <p>Общая статистика и топ-3 игроков</p>
+                    </div>
+                    <div class="screenshot">
+                        <div class="screenshot-placeholder">⭐</div>
+                        <h4>Рейтинг</h4>
+                        <p>Таблица всех игроков с рейтингами</p>
+                    </div>
+                    <div class="screenshot">
+                        <div class="screenshot-placeholder">⚽</div>
+                        <h4>Матчи</h4>
+                        <p>Добавление матчей и история игр</p>
+                    </div>
+                </div>
+            </section>
+
+            <div class="cta">
+                <h2>Готовы начать?</h2>
+                <p>Скачайте ТопРейт и отслеживайте прогресс ваших игроков</p>
+                <a href="#" class="app-store-btn">
+                    <svg viewBox="0 0 30 30" fill="currentColor">
+                        <path d="M25.565 9.785c-.123.077-3.051 1.702-3.051 5.305 0 4.154 3.652 5.607 3.738 5.63-.023.062-.587 2.012-1.932 3.985-1.199 1.77-2.43 3.532-4.363 3.532-1.934 0-2.491-1.137-4.656-1.137-2.126 0-2.86 1.137-4.656 1.137-1.796 0-3.012-1.608-4.363-3.532-1.511-2.151-2.714-5.569-2.714-8.778 0-5.16 3.356-7.897 6.651-7.897 1.75 0 3.203 1.145 4.302 1.145 1.06 0 2.714-1.145 4.717-1.145.771 0 3.577.062 5.327 2.755zm-7.636-5.744c.846-.976 1.444-2.329 1.444-3.682 0-.193-.023-.386-.061-.54-1.383.062-3.012.923-4.01 2.083-.77.855-1.444 2.083-1.444 3.437 0 .193.039.386.062.463.108.023.27.039.416.039 1.23 0 2.737-.823 3.593-1.8z"/>
+                    </svg>
+                    Загрузить бесплатно
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div id="content-en" style="display: none;">
+        <div class="hero">
+            <div class="hero-content">
+                <div class="logo">⭐</div>
+                <h1>TopRate</h1>
+                <p class="tagline">Individual progress of each player</p>
+                <a href="#" class="app-store-btn">
+                    <svg viewBox="0 0 30 30" fill="currentColor">
+                        <path d="M25.565 9.785c-.123.077-3.051 1.702-3.051 5.305 0 4.154 3.652 5.607 3.738 5.63-.023.062-.587 2.012-1.932 3.985-1.199 1.77-2.43 3.532-4.363 3.532-1.934 0-2.491-1.137-4.656-1.137-2.126 0-2.86 1.137-4.656 1.137-1.796 0-3.012-1.608-4.363-3.532-1.511-2.151-2.714-5.569-2.714-8.778 0-5.16 3.356-7.897 6.651-7.897 1.75 0 3.203 1.145 4.302 1.145 1.06 0 2.714-1.145 4.717-1.145.771 0 3.577.062 5.327 2.755zm-7.636-5.744c.846-.976 1.444-2.329 1.444-3.682 0-.193-.023-.386-.061-.54-1.383.062-3.012.923-4.01 2.083-.77.855-1.444 2.083-1.444 3.437 0 .193.039.386.062.463.108.023.27.039.416.039 1.23 0 2.737-.823 3.593-1.8z"/>
+                    </svg>
+                    Download on App Store
+                </a>
+            </div>
+        </div>
+
+        <div class="container">
+            <section class="section">
+                <h2 class="section-title">Features</h2>
+                <div class="features">
+                    <div class="feature">
+                        <div class="feature-icon">📊</div>
+                        <h3>Rating Calculation</h3>
+                        <p>Automatic rating calculation based on Elo system, considering team strength and match results</p>
+                    </div>
+                    <div class="feature">
+                        <div class="feature-icon">👥</div>
+                        <h3>Player Management</h3>
+                        <p>Add players, track their progress and statistics in a convenient table</p>
+                    </div>
+                    <div class="feature">
+                        <div class="feature-icon">⚽</div>
+                        <h3>Match History</h3>
+                        <p>Save all match results and view detailed game history</p>
+                    </div>
+                    <div class="feature">
+                        <div class="feature-icon">📈</div>
+                        <h3>Statistics</h3>
+                        <p>View overall statistics: number of players, matches, average rating and top-3 players</p>
+                    </div>
+                    <div class="feature">
+                        <div class="feature-icon">🌍</div>
+                        <h3>Two Languages</h3>
+                        <p>Support for Russian and English with easy switching</p>
+                    </div>
+                    <div class="feature">
+                        <div class="feature-icon">🔒</div>
+                        <h3>Privacy</h3>
+                        <p>All data is stored only on your device. No servers, no data transmission</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section">
+                <h2 class="section-title">App Interface</h2>
+                <div class="screenshots">
+                    <div class="screenshot">
+                        <div class="screenshot-placeholder">🏠</div>
+                        <h4>Home</h4>
+                        <p>Overall statistics and top-3 players</p>
+                    </div>
+                    <div class="screenshot">
+                        <div class="screenshot-placeholder">⭐</div>
+                        <h4>Rating</h4>
+                        <p>Table of all players with ratings</p>
+                    </div>
+                    <div class="screenshot">
+                        <div class="screenshot-placeholder">⚽</div>
+                        <h4>Matches</h4>
+                        <p>Add matches and view game history</p>
+                    </div>
+                </div>
+            </section>
+
+            <div class="cta">
+                <h2>Ready to start?</h2>
+                <p>Download TopRate and track your players' progress</p>
+                <a href="#" class="app-store-btn">
+                    <svg viewBox="0 0 30 30" fill="currentColor">
+                        <path d="M25.565 9.785c-.123.077-3.051 1.702-3.051 5.305 0 4.154 3.652 5.607 3.738 5.63-.023.062-.587 2.012-1.932 3.985-1.199 1.77-2.43 3.532-4.363 3.532-1.934 0-2.491-1.137-4.656-1.137-2.126 0-2.86 1.137-4.656 1.137-1.796 0-3.012-1.608-4.363-3.532-1.511-2.151-2.714-5.569-2.714-8.778 0-5.16 3.356-7.897 6.651-7.897 1.75 0 3.203 1.145 4.302 1.145 1.06 0 2.714-1.145 4.717-1.145.771 0 3.577.062 5.327 2.755zm-7.636-5.744c.846-.976 1.444-2.329 1.444-3.682 0-.193-.023-.386-.061-.54-1.383.062-3.012.923-4.01 2.083-.77.855-1.444 2.083-1.444 3.437 0 .193.039.386.062.463.108.023.27.039.416.039 1.23 0 2.737-.823 3.593-1.8z"/>
+                    </svg>
+                    Download for free
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">
+        <div class="footer-links">
+            <a href="support.html">Support</a>
+            <a href="mailto:zveresch2019@gmail.com">Contact</a>
+        </div>
+        <p>&copy; 2025 TopRate. All rights reserved.</p>
+    </div>
+
+    <script>
+        function switchLang(lang) {
+            const ruContent = document.getElementById('content-ru');
+            const enContent = document.getElementById('content-en');
+            const buttons = document.querySelectorAll('.lang-btn');
+            
+            if (lang === 'ru') {
+                ruContent.style.display = 'block';
+                enContent.style.display = 'none';
+                buttons[0].classList.add('active');
+                buttons[1].classList.remove('active');
+            } else {
+                ruContent.style.display = 'none';
+                enContent.style.display = 'block';
+                buttons[0].classList.remove('active');
+                buttons[1].classList.add('active');
+            }
+        }
+    </script>
+</body>
+</html>
+
