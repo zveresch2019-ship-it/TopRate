@@ -73,6 +73,7 @@ console.log('🔍 Environment variables:');
 console.log('PORT:', process.env.PORT);
 console.log('MONGODB_URI set:', Boolean(process.env.MONGODB_URI));
 console.log('NODE_ENV:', process.env.NODE_ENV);
+console.log('All env vars:', Object.keys(process.env).filter(k => k.includes('MONGO') || k.includes('JWT') || k.includes('NODE') || k.includes('PORT')));
 
 // Проверка обязательных переменных окружения
 if (!MONGODB_URI) {
