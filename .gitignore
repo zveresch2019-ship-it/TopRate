@@ -73,3 +73,15 @@ yarn-error.log
 !.yarn/releases
 !.yarn/sdks
 !.yarn/versions
+.expo/
+asc/
+*.p8
+
+# Server files (exclude from client bundle)
+# server/  # Commented out - needed for Railway deployment
+server/.env
+server/node_modules/
+test-*.js
+*.bat
+*.md
+*.html

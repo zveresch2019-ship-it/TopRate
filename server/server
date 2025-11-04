@@ -1,0 +1,142 @@
+const express = require('express');
+const cors = require('cors');
+
+const app = express();
+
+// Middleware
+app.use(cors());
+app.use(express.json());
+
+// Request logging
+app.use((req, res, next) => {
+  console.log(`📥 ${req.method} ${req.url} from ${req.ip}`);
+  next();
+});
+
+// Mock data
+const mockUsers = [
+  {
+    _id: 'mock-user-id',
+    username: 'veresch',
+    role: 'admin',
+    groupId: 'mock-group-id',
+    groupName: 'Test Group',
+    createdAt: new Date()
+  }
+];
+
+const mockSeasons = [
+  {
+    _id: 'mock-season-id',
+    seasonNumber: 1,
+    isActive: true,
+    sportType: 'football',
+    groupId: 'mock-group-id'
+  }
+];
+
+const mockPlayers = [
+  {
+    _id: 'mock-player-1',
+    name: 'Test Player 1',
+    rating: 1500,
+    seasonStartRating: 1500,
+    currentSeason: 1,
+    sportType: 'football',
+    groupId: 'mock-group-id',
+    gamesPlayed: 0,
+    wins: 0,
+    losses: 0
+  }
+];
+
+// Health check
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok', message: 'Mock server is running' });
+});
+
+// Auth routes
+app.post('/api/auth/login', (req, res) => {
+  const { username, password } = req.body;
+  
+  if (username === 'veresch' && password === 'veresch123') {
+    res.json({
+      message: 'Login successful',
+      token: 'mock-jwt-token',
+      user: mockUsers[0]
+    });
+  } else {
+    res.status(401).json({ error: 'Invalid credentials' });
+  }
+});
+
+app.post('/api/auth/register', (req, res) => {
+  const { username, password } = req.body;
+  
+  res.status(201).json({
+    message: 'User registered successfully',
+    token: 'mock-jwt-token',
+    user: mockUsers[0]
+  });
+});
+
+app.get('/api/auth/me', (req, res) => {
+  res.json({
+    user: mockUsers[0]
+  });
+});
+
+// Seasons routes
+app.get('/api/seasons', (req, res) => {
+  res.json({ seasons: mockSeasons });
+});
+
+app.get('/api/seasons/current', (req, res) => {
+  res.json({ season: mockSeasons[0] });
+});
+
+app.post('/api/seasons/new', (req, res) => {
+  res.json({ season: mockSeasons[0] });
+});
+
+// Players routes
+app.get('/api/players', (req, res) => {
+  res.json({ players: mockPlayers });
+});
+
+app.post('/api/players', (req, res) => {
+  const { name, rating, sportType } = req.body;
+  
+  const newPlayer = {
+    _id: `mock-player-${Date.now()}`,
+    name,
+    rating: rating || 1500,
+    seasonStartRating: rating || 1500,
+    currentSeason: 1,
+    sportType: sportType || 'football',
+    groupId: 'mock-group-id',
+    gamesPlayed: 0,
+    wins: 0,
+    losses: 0
+  };
+  
+  mockPlayers.push(newPlayer);
+  
+  res.status(201).json({ player: newPlayer });
+});
+
+// Matches routes
+app.get('/api/matches', (req, res) => {
+  res.json({ matches: [] });
+});
+
+app.post('/api/matches', (req, res) => {
+  res.json({ match: { _id: 'mock-match-id' } });
+});
+
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 Mock server running on port ${PORT}`);
+  console.log(`📡 Health check: http://localhost:${PORT}/api/health`);
+});

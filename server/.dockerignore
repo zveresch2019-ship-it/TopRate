@@ -1,0 +1,12 @@
+Gemfile
+Gemfile.lock
+*.gem
+ruby/
+node_modules/
+.env
+*.log
+*.md
+*backup*
+*test*
+*debug*
+

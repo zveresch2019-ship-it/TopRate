@@ -1,0 +1,21 @@
+ИНСТРУКЦИЯ ПО НАСТРОЙКЕ СЕРВЕРА
+
+1. Создайте файл .env в папке server со следующим содержимым:
+
+PORT=3000
+MONGODB_URI=mongodb+srv://zveresch2019_db_user:XP4g5hvaZllf1o77@veresch.8pu6fqv.mongodb.net/football-rating?retryWrites=true&w=majority&appName=Veresch
+JWT_SECRET=football_rating_app_secret_key_2024_production_zveresch_32chars_minimum
+NODE_ENV=development
+
+2. Установите зависимости:
+npm install
+
+3. Запустите сервер:
+npm run dev
+
+4. Проверьте работу:
+http://localhost:3000/api/health
+
+ВАЖНО: Файл .env не должен попадать в git (уже добавлен в .gitignore)
+
+
