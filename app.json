@@ -1,13 +1,14 @@
 {
   "expo": {
-    "name": "Футбольный Рейтинг",
+    "name": "TopRate",
     "slug": "football-rating-app",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/Icon-App-1024x1024.png",
     "userInterfaceStyle": "light",
+    "description": "Professional player rating system for team sports",
+    "primaryColor": "#0051D5",
     "splash": {
-      "image": "./assets/splash.png",
       "resizeMode": "contain",
       "backgroundColor": "#2196F3"
     },
@@ -15,17 +16,25 @@
       "**/*"
     ],
     "ios": {
-      "supportsTablet": true,
+      "supportsTablet": false,
       "bundleIdentifier": "com.footballrating.app",
-      "buildNumber": "1.0.0"
+      "buildNumber": "1.0.4",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/icon.png",
         "backgroundColor": "#FFFFFF"
       },
-      "package": "com.footballrating.app",
-      "versionCode": 1
+      "package": "com.toprate.app",
+      "versionCode": 1,
+      "permissions": [
+        "INTERNET",
+        "ACCESS_NETWORK_STATE"
+      ],
+      "playStoreUrl": "https://play.google.com/store/apps/details?id=com.toprate.app"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -35,7 +44,8 @@
     "extra": {
       "eas": {
         "projectId": "a94cbec5-e953-443c-a2e8-ac678a14f93e"
-      }
+      },
+      "EXPO_PUBLIC_API_URL": "https://toprate-production.up.railway.app/api"
     },
     "owner": "veresch"
   }
