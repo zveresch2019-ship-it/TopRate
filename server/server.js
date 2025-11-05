@@ -45,13 +45,13 @@ app.get('/api/health', (req, res) => {
 
 // Serve privacy policy
 app.get('/privacy', (req, res) => {
-  const privacyPath = path.join(__dirname, '..', 'docs', 'privacy.html');
+  const privacyPath = path.join(__dirname, 'public', 'privacy.html');
   res.sendFile(privacyPath);
 });
 
 // Serve privacy policy with .html extension
 app.get('/privacy.html', (req, res) => {
-  const privacyPath = path.join(__dirname, '..', 'docs', 'privacy.html');
+  const privacyPath = path.join(__dirname, 'public', 'privacy.html');
   res.sendFile(privacyPath);
 });
 
