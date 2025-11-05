@@ -43,6 +43,18 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'Server is running' });
 });
 
+// Serve privacy policy
+app.get('/privacy', (req, res) => {
+  const privacyPath = path.join(__dirname, '..', 'docs', 'privacy.html');
+  res.sendFile(privacyPath);
+});
+
+// Serve privacy policy with .html extension
+app.get('/privacy.html', (req, res) => {
+  const privacyPath = path.join(__dirname, '..', 'docs', 'privacy.html');
+  res.sendFile(privacyPath);
+});
+
 // Error handling middleware (должен быть последним middleware)
 app.use((err, req, res, next) => {
   console.error('❌ Global error handler called');
