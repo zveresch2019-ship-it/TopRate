@@ -34,7 +34,8 @@
         "INTERNET",
         "ACCESS_NETWORK_STATE"
       ],
-      "playStoreUrl": "https://play.google.com/store/apps/details?id=com.toprate.app"
+      "playStoreUrl": "https://play.google.com/store/apps/details?id=com.toprate.app",
+      "screens": ["phone"]
     },
     "web": {
       "favicon": "./assets/favicon.png"
