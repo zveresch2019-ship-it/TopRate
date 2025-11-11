@@ -8,8 +8,6 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
-  Modal,
-  ScrollView,
 } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import { getAuthToken, authAPI } from '../utils/api';
@@ -25,7 +23,6 @@ const LoginScreen: React.FC<{
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [isHelpVisible, setIsHelpVisible] = useState(false);
   const { login, register, currentUser } = useAuth();
   const { t } = useLanguage();
 
@@ -386,6 +383,25 @@ const LoginScreen: React.FC<{
     }
   };
 
+  const renderHelp = () => (
+    <View style={styles.helpContainer}>
+      <Text style={styles.tagline}>{t('help.purpose')}</Text>
+      {helpSections.map((section, index) => (
+        <View key={`section-${index}`} style={styles.helpSectionWrapper}>
+          {section.title ? (
+            <Text style={styles.helpSectionTitle}>{section.title}</Text>
+          ) : null}
+          {section.items.map((item, itemIndex) => (
+            <View key={`item-${index}-${itemIndex}`} style={styles.helpRow}>
+              <Text style={styles.helpBullet}>•</Text>
+              <Text style={styles.helpText}>{item}</Text>
+            </View>
+          ))}
+        </View>
+      ))}
+    </View>
+  );
+
   // Mode selection screen
   if (mode === 'select') {
     return (
@@ -394,18 +410,8 @@ const LoginScreen: React.FC<{
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         <View style={styles.content}>
-          <View style={styles.headerRow}>
-            <Text style={styles.title}>🏆 TopRate</Text>
-            <TouchableOpacity
-              style={styles.helpButton}
-              onPress={() => setIsHelpVisible(true)}
-            >
-              <Text style={styles.helpButtonText}>?</Text>
-            </TouchableOpacity>
-          </View>
-          <Text style={styles.tagline}>
-            {t('help.purpose')}
-          </Text>
+          <Text style={styles.title}>🏆 TopRate</Text>
+          {renderHelp()}
           <View style={styles.modeSelectionContainer}>
             <TouchableOpacity
               style={styles.modeButton}
@@ -435,18 +441,8 @@ const LoginScreen: React.FC<{
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <View style={styles.content}>
-        <View style={styles.headerRow}>
-          <Text style={styles.title}>🏆 TopRate</Text>
-          <TouchableOpacity
-            style={styles.helpButton}
-            onPress={() => setIsHelpVisible(true)}
-          >
-            <Text style={styles.helpButtonText}>?</Text>
-          </TouchableOpacity>
-        </View>
-        <Text style={styles.tagline}>
-          {t('help.purpose')}
-        </Text>
+        <Text style={styles.title}>🏆 TopRate</Text>
+        {renderHelp()}
         <Text style={styles.subtitle}>
           {mode === 'register' ? 'Create Account' : 'Log In'}
         </Text>
@@ -495,42 +491,6 @@ const LoginScreen: React.FC<{
           </TouchableOpacity>
         </View>
       </View>
-
-      <Modal
-        visible={isHelpVisible}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setIsHelpVisible(false)}
-      >
-        <View style={styles.helpOverlay}>
-          <View style={styles.helpContent}>
-            <View style={styles.helpHeader}>
-              <Text style={styles.helpTitle}>{t('help.title')}</Text>
-              <TouchableOpacity
-                style={styles.closeButton}
-                onPress={() => setIsHelpVisible(false)}
-              >
-                <Text style={styles.closeButtonText}>✕</Text>
-              </TouchableOpacity>
-            </View>
-            <ScrollView style={styles.helpBody} showsVerticalScrollIndicator={false}>
-              <Text style={styles.helpPurpose}>{t('help.purpose')}</Text>
-              {helpSections.map((section, index) => (
-                <View key={`section-${index}`} style={styles.helpSectionWrapper}>
-                  {section.title ? (
-                    <Text style={styles.helpSectionTitle}>{section.title}</Text>
-                  ) : null}
-                  {section.items.map((item, itemIndex) => (
-                    <Text key={`item-${index}-${itemIndex}`} style={styles.helpText}>
-                      {item}
-                    </Text>
-                  ))}
-                </View>
-              ))}
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
     </KeyboardAvoidingView>
   );
 };
@@ -545,33 +505,37 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
-    gap: 24,
-  },
-  headerRow: {
-    width: '100%',
-    maxWidth: 320,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    gap: 20,
   },
   title: {
     fontSize: 32,
     fontWeight: 'bold',
     color: '#FF9500',
   },
-  tagline: {
+  helpContainer: {
     width: '100%',
-    maxWidth: 320,
+    maxWidth: 340,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    paddingVertical: 18,
+    paddingHorizontal: 18,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    elevation: 2,
+    gap: 12,
+  },
+  tagline: {
     fontSize: 14,
-    color: '#555',
+    color: '#444',
     lineHeight: 20,
-    textAlign: 'left',
   },
   subtitle: {
     fontSize: 20,
     fontWeight: '600',
     color: '#333',
-    marginTop: -10,
+    marginTop: 10,
   },
   modeSelectionContainer: {
     width: '100%',
@@ -604,7 +568,7 @@ const styles = StyleSheet.create({
   form: {
     width: '100%',
     maxWidth: 300,
-    marginTop: -10,
+    marginTop: 10,
   },
   input: {
     backgroundColor: '#FFFFFF',
@@ -643,83 +607,28 @@ const styles = StyleSheet.create({
     color: '#666',
     fontSize: 14,
   },
-  helpButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: '#FFB84D',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  helpButtonText: {
-    color: '#fff',
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-  helpOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
-    justifyContent: 'flex-end',
-  },
-  helpContent: {
-    backgroundColor: '#fff',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    padding: 20,
-    maxHeight: '80%',
-  },
-  helpHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 12,
-  },
-  helpTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#333',
-  },
-  closeButton: {
-    width: 30,
-    height: 30,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#F0F0F0',
-  },
-  closeButtonText: {
-    fontSize: 16,
-    color: '#666',
-    fontWeight: '600',
-  },
-  helpBody: {
-    maxHeight: '100%',
-  },
-  helpPurpose: {
-    fontSize: 14,
-    color: '#444',
-    lineHeight: 20,
-    marginBottom: 16,
-  },
   helpSectionWrapper: {
-    marginBottom: 14,
+    gap: 6,
   },
   helpSectionTitle: {
     fontSize: 14,
     fontWeight: '600',
     color: '#333',
-    marginBottom: 6,
+  },
+  helpRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+  },
+  helpBullet: {
+    fontSize: 16,
+    color: '#FF9500',
+    lineHeight: 20,
   },
   helpText: {
     fontSize: 14,
     color: '#555',
     lineHeight: 20,
-    marginBottom: 4,
   },
 });
 
