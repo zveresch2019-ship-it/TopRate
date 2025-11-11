@@ -394,7 +394,7 @@ const LoginScreen: React.FC<{
     ]
       .filter(Boolean)
       .map((item, index, arr) =>
-        index === arr.length - 1 ? item : `${item}\n`) // разделяем абзацы переносом
+        index === arr.length - 1 ? item : `${item}\n`)
   ), [t]);
 
   const renderHelp = () => (
@@ -403,8 +403,8 @@ const LoginScreen: React.FC<{
       <ScrollView
         style={styles.helpScroll}
         contentContainerStyle={styles.helpScrollContent}
-        showsVerticalScrollIndicator
-        persistentScrollbar
+        showsVerticalScrollIndicator={true}
+        persistentScrollbar={true}
       >
         {helpItems.map((item, index) => (
           <Text key={`help-${index}`} style={styles.helpText}>{item}</Text>
@@ -549,19 +549,19 @@ const styles = StyleSheet.create({
     width: '100%',
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.05,
     shadowRadius: 10,
     elevation: 2,
-    gap: 12,
+    gap: 10,
   },
   tagline: {
-    fontSize: 13,
+    fontSize: 12,
     color: '#444',
-    lineHeight: 19,
+    lineHeight: 18,
     textAlign: 'justify',
   },
   subtitle: {
@@ -660,16 +660,18 @@ const styles = StyleSheet.create({
     lineHeight: 19,
   },
   helpText: {
-    fontSize: 13,
+    fontSize: 12,
     color: '#555',
-    lineHeight: 19,
+    lineHeight: 18,
     textAlign: 'justify',
   },
   helpScroll: {
-    maxHeight: 150,
+    width: '100%',
+    maxHeight: 130,
   },
   helpScrollContent: {
-    gap: 8,
+    paddingRight: 6,
+    gap: 6,
   },
 });
 
