@@ -527,7 +527,7 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     padding: 20,
     paddingBottom: 30,
-    gap: 18,
+    gap: 20,
   },
   content: {
     width: '100%',
@@ -541,8 +541,8 @@ const styles = StyleSheet.create({
   },
   helpContainer: {
     width: '100%',
-    height: 420,
-    maxHeight: 460,
+    height: 460,
+    maxHeight: 520,
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
     paddingVertical: 14,
@@ -561,12 +561,13 @@ const styles = StyleSheet.create({
   },
   modeSelectionContainer: {
     width: '100%',
-    maxWidth: 300,
-    gap: 20,
+    maxWidth: 320,
+    gap: 16,
+    alignItems: 'center',
   },
   modeButton: {
     backgroundColor: '#FF9500',
-    paddingVertical: 20,
+    paddingVertical: 14,
     paddingHorizontal: 30,
     borderRadius: 12,
     alignItems: 'center',
@@ -585,7 +586,7 @@ const styles = StyleSheet.create({
   modeButtonSubtext: {
     color: '#FFFFFF',
     fontSize: 14,
-    opacity: 0.9,
+    opacity: 0.85,
   },
   form: {
     width: '100%',
