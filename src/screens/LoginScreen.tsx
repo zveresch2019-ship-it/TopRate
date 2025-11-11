@@ -532,7 +532,7 @@ const styles = StyleSheet.create({
   },
   content: {
     width: '100%',
-    maxWidth: 460,
+    maxWidth: 480,
     alignItems: 'center',
     gap: 16,
   },
