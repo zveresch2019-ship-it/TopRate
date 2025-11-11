@@ -543,7 +543,7 @@ const styles = StyleSheet.create({
   },
   helpContainer: {
     width: '100%',
-    maxWidth: 400,
+    maxWidth: 420,
     alignSelf: 'center',
     height: 600,
     maxHeight: 660,
@@ -667,7 +667,7 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   helpScrollContent: {
-    paddingRight: 8,
+    paddingRight: 4,
     paddingVertical: 8,
   },
 });
