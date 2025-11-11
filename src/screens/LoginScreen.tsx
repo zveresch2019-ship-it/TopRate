@@ -540,11 +540,11 @@ const styles = StyleSheet.create({
   },
   helpContainer: {
     width: '100%',
-    height: 300,
-    maxHeight: 320,
+    height: 360,
+    maxHeight: 400,
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
-    paddingVertical: 12,
+    paddingVertical: 14,
     paddingHorizontal: 14,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
@@ -658,8 +658,8 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   helpScrollContent: {
-    paddingRight: 6,
-    paddingVertical: 4,
+    paddingRight: 8,
+    paddingVertical: 8,
   },
 });
 
