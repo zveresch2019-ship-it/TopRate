@@ -128,7 +128,7 @@ const translations = {
     
     // Справка
     'help.title': 'СИСТЕМА РЕЙТИНГА ТОПРЕЙТ',
-    'help.purpose': 'Система предназначена для определения индивидуального уровня игроков в командных любительских играх при более-менее регулярных матчах с более-менее регулярным составом участников, но преимущественно разной разбивкой на команды.',
+    'help.purpose': 'Система предназначена для определения индивидуального уровня игроков в командных любительских играх с более-менее постоянными участниками и преимущественно разной разбивкой на команды.',
     'help.how_works': 'Как работает рейтинг:',
     'help.add_players': '• Введите любое количество игроков с именами и начальным рейтингом',
     'help.initial_rating': '• Начальный рейтинг можно задать как равный для всех - 1500 очков или сразу установить различие в диапазоне от 1000 до 2000',
@@ -321,7 +321,7 @@ const translations = {
     
     // Help
     'help.title': 'TOPRATE RATING SYSTEM',
-    'help.purpose': 'The system is designed to determine the individual level of players in team amateur games with more or less regular matches with more or less regular participants, but predominantly different team divisions.',
+    'help.purpose': 'The system is designed to determine the individual level of players in team amateur games with more or less consistent participants and predominantly different team divisions.',
     'help.how_works': 'How the rating works:',
     'help.add_players': '• Enter any number of players with names and initial rating',
     'help.initial_rating': '• Initial rating can be set equal for all - 1500 points or immediately establish differences in the range from 1000 to 2000',
