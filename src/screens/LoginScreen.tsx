@@ -573,7 +573,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#FF9500',
     width: 300,
     maxWidth: '100%',
-    paddingVertical: 10,
+    paddingVertical: 6,
+    minHeight: 48,
     paddingHorizontal: 12,
     borderRadius: 10,
     alignItems: 'center',
@@ -585,13 +586,13 @@ const styles = StyleSheet.create({
   },
   modeButtonText: {
     color: '#FFFFFF',
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: 'bold',
-    marginBottom: 4,
+    marginBottom: 2,
   },
   modeButtonSubtext: {
     color: '#FFFFFF',
-    fontSize: 14,
+    fontSize: 12,
     opacity: 0.75,
   },
   form: {
