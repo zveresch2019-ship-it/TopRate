@@ -8,6 +8,7 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  ScrollView,
 } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import { getAuthToken, authAPI } from '../utils/api';
@@ -383,20 +384,23 @@ const LoginScreen: React.FC<{
     }
   };
 
+  const helpItems = useMemo(() => (
+    [
+      t('help.add_players'),
+      t('help.initial_rating'),
+      t('help.rating_changes'),
+      t('help.change_factors'),
+      t('help.rating_change_only_matches'),
+    ].filter(Boolean)
+  ), [t]);
+
   const renderHelp = () => (
     <View style={styles.helpContainer}>
       <Text style={styles.tagline}>{t('help.purpose')}</Text>
-      {helpSections.map((section, index) => (
-        <View key={`section-${index}`} style={styles.helpSectionWrapper}>
-          {section.title ? (
-            <Text style={styles.helpSectionTitle}>{section.title}</Text>
-          ) : null}
-          {section.items.map((item, itemIndex) => (
-            <View key={`item-${index}-${itemIndex}`} style={styles.helpRow}>
-              <Text style={styles.helpBullet}>•</Text>
-              <Text style={styles.helpText}>{item}</Text>
-            </View>
-          ))}
+      {helpItems.map((item, index) => (
+        <View key={`help-${index}`} style={styles.helpRow}>
+          <Text style={styles.helpBullet}>•</Text>
+          <Text style={styles.helpText}>{item}</Text>
         </View>
       ))}
     </View>
@@ -409,27 +413,33 @@ const LoginScreen: React.FC<{
         style={styles.container}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
-        <View style={styles.content}>
-          <Text style={styles.title}>🏆 TopRate</Text>
-          {renderHelp()}
-          <View style={styles.modeSelectionContainer}>
-            <TouchableOpacity
-              style={styles.modeButton}
-              onPress={() => handleModeSelect('login')}
-            >
-              <Text style={styles.modeButtonText}>Log In</Text>
-              <Text style={styles.modeButtonSubtext}>For existing users</Text>
-            </TouchableOpacity>
+        <ScrollView
+          style={styles.scroll}
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={styles.content}>
+            <Text style={styles.title}>🏆 TopRate</Text>
+            {renderHelp()}
+            <View style={styles.modeSelectionContainer}>
+              <TouchableOpacity
+                style={styles.modeButton}
+                onPress={() => handleModeSelect('login')}
+              >
+                <Text style={styles.modeButtonText}>Log In</Text>
+                <Text style={styles.modeButtonSubtext}>For existing users</Text>
+              </TouchableOpacity>
 
-            <TouchableOpacity
-              style={styles.modeButton}
-              onPress={() => handleModeSelect('register')}
-            >
-              <Text style={styles.modeButtonText}>New User</Text>
-              <Text style={styles.modeButtonSubtext}>Create account</Text>
-            </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.modeButton}
+                onPress={() => handleModeSelect('register')}
+              >
+                <Text style={styles.modeButtonText}>New User</Text>
+                <Text style={styles.modeButtonSubtext}>Create account</Text>
+              </TouchableOpacity>
+            </View>
           </View>
-        </View>
+        </ScrollView>
       </KeyboardAvoidingView>
     );
   }
@@ -440,57 +450,63 @@ const LoginScreen: React.FC<{
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <View style={styles.content}>
-        <Text style={styles.title}>🏆 TopRate</Text>
-        {renderHelp()}
-        <Text style={styles.subtitle}>
-          {mode === 'register' ? 'Create Account' : 'Log In'}
-        </Text>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+      >
+        <View style={styles.content}>
+          <Text style={styles.title}>🏆 TopRate</Text>
+          {renderHelp()}
+          <Text style={styles.subtitle}>
+            {mode === 'register' ? 'Create Account' : 'Log In'}
+          </Text>
 
-        <View style={styles.form}>
-          <TextInput
-            style={styles.input}
-            placeholder="Username"
-            value={username}
-            onChangeText={setUsername}
-            autoCapitalize="none"
-            maxLength={8}
-          />
+          <View style={styles.form}>
+            <TextInput
+              style={styles.input}
+              placeholder="Username"
+              value={username}
+              onChangeText={setUsername}
+              autoCapitalize="none"
+              maxLength={8}
+            />
 
-          <TextInput
-            style={styles.input}
-            placeholder="Password"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-          />
+            <TextInput
+              style={styles.input}
+              placeholder="Password"
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
+            />
 
-          <TouchableOpacity
-            style={[styles.submitButton, isLoading && styles.submitButtonDisabled]}
-            onPress={handleSubmit}
-            disabled={isLoading}
-          >
-            <Text style={styles.submitButtonText}>
-              {isLoading
-                ? 'Loading...'
-                : mode === 'register'
-                ? 'Create Account'
-                : 'Log In'}
-            </Text>
-          </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.submitButton, isLoading && styles.submitButtonDisabled]}
+              onPress={handleSubmit}
+              disabled={isLoading}
+            >
+              <Text style={styles.submitButtonText}>
+                {isLoading
+                  ? 'Loading...'
+                  : mode === 'register'
+                  ? 'Create Account'
+                  : 'Log In'}
+              </Text>
+            </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => {
-              setMode('select');
-              setUsername('');
-              setPassword('');
-            }}
-          >
-            <Text style={styles.backButtonText}>← Back</Text>
-          </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.backButton}
+              onPress={() => {
+                setMode('select');
+                setUsername('');
+                setPassword('');
+              }}
+            >
+              <Text style={styles.backButtonText}>← Back</Text>
+            </TouchableOpacity>
+          </View>
         </View>
-      </View>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 };
@@ -500,12 +516,22 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F5F5F5',
   },
-  content: {
+  scroll: {
     flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
+    paddingBottom: 40,
     gap: 20,
+  },
+  content: {
+    width: '100%',
+    maxWidth: 380,
+    alignItems: 'center',
+    gap: 18,
   },
   title: {
     fontSize: 32,
@@ -514,28 +540,27 @@ const styles = StyleSheet.create({
   },
   helpContainer: {
     width: '100%',
-    maxWidth: 340,
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
-    paddingVertical: 18,
-    paddingHorizontal: 18,
+    paddingVertical: 16,
+    paddingHorizontal: 16,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
     elevation: 2,
-    gap: 12,
+    gap: 10,
   },
   tagline: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#444',
-    lineHeight: 20,
+    lineHeight: 19,
   },
   subtitle: {
     fontSize: 20,
     fontWeight: '600',
     color: '#333',
-    marginTop: 10,
+    marginTop: 6,
   },
   modeSelectionContainer: {
     width: '100%',
@@ -568,7 +593,8 @@ const styles = StyleSheet.create({
   form: {
     width: '100%',
     maxWidth: 300,
-    marginTop: 10,
+    marginTop: 6,
+    gap: 12,
   },
   input: {
     backgroundColor: '#FFFFFF',
@@ -621,14 +647,14 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   helpBullet: {
-    fontSize: 16,
+    fontSize: 14,
     color: '#FF9500',
-    lineHeight: 20,
+    lineHeight: 19,
   },
   helpText: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#555',
-    lineHeight: 20,
+    lineHeight: 19,
   },
 });
 
