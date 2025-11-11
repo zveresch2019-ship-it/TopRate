@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -8,101 +8,529 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  Modal,
+  ScrollView,
 } from 'react-native';
 import { useAuth } from '../context/AuthContext';
+import { getAuthToken, authAPI } from '../utils/api';
+import { useLanguage } from '../context/LanguageContext';
 
-const LoginScreen: React.FC = () => {
+type ScreenMode = 'select' | 'login' | 'register';
+
+const LoginScreen: React.FC<{
+  onRegister?: (username: string, password: string) => void;
+  onLogin?: () => void;
+}> = ({ onRegister, onLogin }) => {
+  const [mode, setMode] = useState<ScreenMode>('select');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [isRegister, setIsRegister] = useState(false);
-  const [email, setEmail] = useState('');
-  const { login, register } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
+  const [isHelpVisible, setIsHelpVisible] = useState(false);
+  const { login, register, currentUser } = useAuth();
+  const { t } = useLanguage();
 
-  const handleSubmit = async () => {
-    if (!username.trim() || !password.trim()) {
-      Alert.alert('Ошибка', 'Заполните все поля');
-      return;
+  const helpSections = useMemo(() => {
+    const howWorksItems = [
+      t('help.add_players'),
+      t('help.initial_rating'),
+      t('help.rating_changes'),
+      t('help.change_factors'),
+    ].filter(Boolean);
+
+    const extraItems = [t('help.rating_change_only_matches')].filter(Boolean);
+
+    const sections: Array<{ title?: string; items: string[] }> = [];
+    if (howWorksItems.length > 0) {
+      sections.push({ title: t('help.how_works'), items: howWorksItems });
     }
-
-    if (isRegister && !email.trim()) {
-      Alert.alert('Ошибка', 'Введите email');
-      return;
+    if (extraItems.length > 0) {
+      const extraTitle = t('help.seasons_title');
+      sections.push({ title: extraTitle || undefined, items: extraItems });
     }
+    return sections;
+  }, [t]);
 
-    try {
-      let success = false;
-      if (isRegister) {
-        success = await register(username, password, email);
-      } else {
-        success = await login(username, password);
-      }
+  // Clear form when switching modes
+  React.useEffect(() => {
+    setUsername('');
+    setPassword('');
+  }, [mode]);
 
-      if (!success) {
-        Alert.alert('Ошибка', 'Неверные данные');
-      }
-    } catch (error) {
-      Alert.alert('Ошибка', 'Произошла ошибка при входе');
+  // Clear mode when user logs in successfully
+  React.useEffect(() => {
+    if (currentUser) {
+      setMode('select');
+      setUsername('');
+      setPassword('');
+    }
+  }, [currentUser]);
+
+  const handleModeSelect = (selectedMode: 'login' | 'register') => {
+    setMode(selectedMode);
+    if (onLogin && selectedMode === 'login') {
+      onLogin();
     }
   };
 
+  const handleSubmit = async () => {
+    if (!username.trim() || !password.trim()) {
+      Alert.alert('Error', 'Please fill in all fields');
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      if (mode === 'register') {
+        // Registration
+        console.log('LoginScreen: Registering user:', username);
+        
+        // Устанавливаем pendingRegistration СРАЗУ, чтобы избежать race condition
+        // Если регистрация успешна, это состояние уже будет установлено
+        // Если регистрация не успешна, onRegister не вызовется, и состояние не нужно
+        let registrationPending = false;
+        
+        try {
+          // Устанавливаем pendingRegistration ДО вызова register, чтобы App.tsx
+          // не выполнил logout проверку до того, как мы установим pendingRegistration
+          if (onRegister) {
+            // Временно устанавливаем pendingRegistration через onRegister
+            // Это предотвратит logout проверку в App.tsx
+            onRegister(username, password);
+            registrationPending = true;
+          }
+          
+          const success = await register(username, password);
+          console.log('LoginScreen: Register result:', success);
+
+          if (success) {
+            // Registration successful - proceed to group selection
+            // onRegister уже вызван выше, pendingRegistration уже установлен
+            console.log('LoginScreen: Registration successful, proceeding to group selection');
+            setUsername('');
+            setPassword('');
+            setMode('select');
+          } else {
+            // Если регистрация не успешна, нужно сбросить pendingRegistration
+            // Но мы не можем этого сделать напрямую из LoginScreen
+            // Это обработается в App.tsx через проверку currentUser
+            if (registrationPending) {
+              console.log('LoginScreen: Registration failed, but pendingRegistration was set - it will be cleared by App.tsx');
+            }
+            // Registration returned false - это может быть "username already taken" ИЛИ ошибка валидации с уже исправленными данными
+            // В случае ошибки валидации с исправленными данными не показываем Alert, т.к. данные уже валидны
+            // Проверяем, валидны ли текущие данные
+            const isCurrentUsernameValid = username.trim().length >= 3 && username.trim().length <= 8;
+            const isCurrentPasswordValid = password.trim().length >= 6;
+            
+            // Если данные валидны, но регистрация вернула false, возможно это была ошибка валидации
+            // которая уже обработана - не показываем ошибку, просто пробуем еще раз или логиним
+            if (isCurrentUsernameValid && isCurrentPasswordValid) {
+              // Данные валидны, но регистрация не прошла - возможно это "username already taken"
+              // Попробуем автоматически залогинить
+              console.log('LoginScreen: Registration returned false but data is valid, attempting auto-login');
+            } else {
+              // Данные не валидны, но регистрация вернула false - это странно
+              // Показываем Alert с ошибкой валидации
+              console.log('LoginScreen: Registration returned false and data is invalid, showing validation error');
+              let validationErrors = [];
+              if (!isCurrentUsernameValid) {
+                validationErrors.push('Имя пользователя должно быть от 3 до 8 символов');
+              }
+              if (!isCurrentPasswordValid) {
+                validationErrors.push('Пароль должен быть минимум 6 символов');
+              }
+              if (validationErrors.length > 0) {
+                Alert.alert(
+                  'Validation Error',
+                  validationErrors.join('\n')
+                );
+                setIsLoading(false);
+                return;
+              }
+            }
+            
+            // Registration returned false - это означает "username already taken" или другая ошибка
+            // Попробуем автоматически залогинить
+            console.log('LoginScreen: Registration returned false, attempting auto-login');
+            
+            try {
+              // Пытаемся залогинить пользователя - это нормальная ситуация
+              const loginSuccess = await login(username, password);
+              
+              if (loginSuccess) {
+                // Успешный логин - проверяем, есть ли группа
+                await new Promise(resolve => setTimeout(resolve, 400)); // Даем время обновиться currentUser
+                
+                const userData = await authAPI.getCurrentUser();
+                
+                if (userData && userData.user) {
+                  if (userData.user.groupId) {
+                    // У пользователя есть группа - успешный вход
+                    console.log('LoginScreen: User has group, auto-login successful');
+                    setUsername('');
+                    setPassword('');
+                    setMode('select');
+                    return;
+                  } else {
+                    // У пользователя нет группы - переходим на выбор группы
+                    console.log('LoginScreen: User exists but has no group, proceeding to group selection');
+                    if (onRegister) {
+                      onRegister(username, password);
+                    }
+                    setUsername('');
+                    setPassword('');
+                    setMode('select');
+                    return;
+                  }
+                } else {
+                  // Не удалось загрузить данные пользователя
+                  console.log('LoginScreen: Failed to load user data after auto-login');
+                }
+              }
+            } catch (loginError: any) {
+              // Не логируем как ошибку - это нормальная ситуация (неверный пароль и т.д.)
+              const errorMsg = (loginError?.message || '').toLowerCase();
+              if (errorMsg.includes('invalid credentials')) {
+                console.log('LoginScreen: Auto-login failed - invalid credentials (expected)');
+              } else {
+                console.log('LoginScreen: Auto-login failed:', loginError?.message || 'Unknown error');
+              }
+            }
+            
+            // Если автоматический логин не удался - предлагаем переключиться на Log In
+            Alert.alert(
+              'User Already Exists',
+              'This username is already taken. Please use "Log In" to sign in with your existing account.',
+              [
+                {
+                  text: 'Switch to Log In',
+                  onPress: () => {
+                    setMode('login');
+                    setUsername(username); // Keep username
+                  },
+                },
+                {
+                  text: 'OK',
+                  style: 'cancel',
+                },
+              ]
+            );
+          }
+        } catch (registrationError: any) {
+          // Этот блок catch обрабатывает все ошибки регистрации
+          
+          const errorMsg = registrationError?.message || '';
+          console.log('LoginScreen: Caught registration error:', errorMsg);
+          
+          // Сначала проверяем, это ошибка валидации?
+          const isValidationError = errorMsg.toLowerCase().includes('должно быть от 3 до 8') ||
+                                   errorMsg.toLowerCase().includes('must be 3-8 characters') ||
+                                   errorMsg.toLowerCase().includes('должен быть минимум 6') ||
+                                   errorMsg.toLowerCase().includes('must be at least 6') ||
+                                   errorMsg.toLowerCase().includes('validation error') ||
+                                   errorMsg.toLowerCase().includes('обязательно') ||
+                                   errorMsg.toLowerCase().includes('required');
+          
+          console.log('LoginScreen: Is validation error?', isValidationError);
+          
+          // Для ошибок валидации проверяем текущие данные
+          if (isValidationError) {
+            // Проверяем валидность текущих значений
+            const isCurrentUsernameValid = username.trim().length >= 3 && username.trim().length <= 8;
+            const isCurrentPasswordValid = password.trim().length >= 6;
+            
+            console.log('LoginScreen: Current username valid?', isCurrentUsernameValid, 'length:', username.trim().length);
+            console.log('LoginScreen: Current password valid?', isCurrentPasswordValid, 'length:', password.trim().length);
+            
+            // Определяем тип ошибки
+            const usernameError = errorMsg.toLowerCase().includes('имя') || 
+                                 errorMsg.toLowerCase().includes('username') ||
+                                 errorMsg.toLowerCase().includes('3-8') ||
+                                 errorMsg.toLowerCase().includes('от 3 до 8');
+            const passwordError = errorMsg.toLowerCase().includes('пароль') || 
+                                 errorMsg.toLowerCase().includes('password') ||
+                                 errorMsg.toLowerCase().includes('at least 6') ||
+                                 errorMsg.toLowerCase().includes('минимум 6');
+            
+            console.log('LoginScreen: Username error?', usernameError);
+            console.log('LoginScreen: Password error?', passwordError);
+            
+            // Если проблема исправлена, НЕ показываем ошибку
+            const problemFixed = (usernameError && isCurrentUsernameValid && !passwordError) ||
+                                (passwordError && isCurrentPasswordValid && !usernameError) ||
+                                (usernameError && isCurrentUsernameValid && passwordError && isCurrentPasswordValid);
+            
+            console.log('LoginScreen: Problem fixed?', problemFixed);
+            
+            if (problemFixed) {
+              // Проблема исправлена - не показываем ошибку
+              console.log('LoginScreen: Validation error but issue is fixed, ignoring error');
+            } else {
+              // Проблема НЕ исправлена - ВСЕГДА показываем Alert
+              console.log('LoginScreen: Validation error (showing Alert):', errorMsg);
+              Alert.alert(
+                'Validation Error',
+                errorMsg || 'Please check your input.'
+              );
+              // После показа Alert завершаем обработку - не логируем как ошибку
+              setIsLoading(false);
+              return;
+            }
+          } else {
+            // Для других ошибок (не валидация) - проверяем, зарегистрирован ли пользователь
+            // Даем время на обновление currentUser и токена после успешной регистрации
+            await new Promise(resolve => setTimeout(resolve, 300));
+            
+            // Check if user is actually registered (token might have been saved)
+            const token = await getAuthToken();
+            const userData = await authAPI.getCurrentUser().catch(() => null);
+            const isUserRegistered = token || 
+                                    (currentUser && currentUser.username.toLowerCase() === username.toLowerCase()) ||
+                                    (userData && userData.user && userData.user.username.toLowerCase() === username.toLowerCase());
+
+            if (isUserRegistered) {
+              // User registered successfully despite error - не показываем ошибку
+              console.log('LoginScreen: User registered successfully despite error, skipping error display');
+              if (onRegister) {
+                onRegister(username, password);
+              }
+              setUsername('');
+              setPassword('');
+              setMode('select');
+              setIsLoading(false);
+              return;
+            } else {
+              // Пользователь не зарегистрирован - показываем ошибку
+              console.log('LoginScreen: Registration error caught:', registrationError?.message || registrationError);
+              Alert.alert(
+                'Registration Failed',
+                errorMsg || 'Failed to register user. Please try again.'
+              );
+            }
+          }
+        } finally {
+          setIsLoading(false);
+        }
+      } else {
+        // Login
+        console.log('LoginScreen: Attempting login for:', username);
+
+        try {
+          const success = await login(username, password);
+          console.log('LoginScreen: Login result:', success);
+
+          // Check if user is actually logged in
+          await new Promise(resolve => setTimeout(resolve, 200));
+          const token = await getAuthToken();
+          const isUserLoggedIn = token || (currentUser && currentUser.username.toLowerCase() === username.toLowerCase());
+
+          if (success || isUserLoggedIn) {
+            // Successful login
+            console.log('LoginScreen: Login successful');
+            setUsername('');
+            setPassword('');
+            setMode('select');
+          } else {
+            // Login failed
+            Alert.alert(
+              'Login Failed',
+              'Invalid username or password. Please check your credentials and try again.'
+            );
+          }
+        } catch (loginError: any) {
+          // Логируем ошибки входа только если это не ожидаемая ошибка (invalid credentials)
+          const isExpectedError = (loginError?.message || '').toLowerCase().includes('invalid credentials');
+          if (!isExpectedError) {
+            console.error('LoginScreen: Login error caught:', loginError);
+          } else {
+            console.log('LoginScreen: Invalid credentials (expected error)');
+          }
+
+          // Check if user is actually logged in
+          await new Promise(resolve => setTimeout(resolve, 200));
+          const token = await getAuthToken();
+          const isUserLoggedIn = token || (currentUser && currentUser.username.toLowerCase() === username.toLowerCase());
+
+          if (isUserLoggedIn) {
+            // User logged in successfully despite error
+            console.log('LoginScreen: User logged in successfully despite error');
+            setUsername('');
+            setPassword('');
+            setMode('select');
+          } else {
+            // Login failed
+            const errorMsg = (loginError?.message || '').toLowerCase();
+            if (errorMsg.includes('invalid credentials')) {
+              Alert.alert(
+                'Login Failed',
+                'Invalid username or password. Please check your credentials and try again.'
+              );
+            } else {
+              Alert.alert(
+                'Login Failed',
+                loginError?.message || 'Failed to login. Please try again.'
+              );
+            }
+          }
+        }
+      }
+    } catch (error: any) {
+      console.error('LoginScreen: Unexpected error:', error);
+      Alert.alert(
+        'Error',
+        'An unexpected error occurred. Please try again.'
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Mode selection screen
+  if (mode === 'select') {
+    return (
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <View style={styles.content}>
+          <View style={styles.headerRow}>
+            <Text style={styles.title}>🏆 TopRate</Text>
+            <TouchableOpacity
+              style={styles.helpButton}
+              onPress={() => setIsHelpVisible(true)}
+            >
+              <Text style={styles.helpButtonText}>?</Text>
+            </TouchableOpacity>
+          </View>
+          <Text style={styles.tagline}>
+            {t('help.purpose')}
+          </Text>
+          <View style={styles.modeSelectionContainer}>
+            <TouchableOpacity
+              style={styles.modeButton}
+              onPress={() => handleModeSelect('login')}
+            >
+              <Text style={styles.modeButtonText}>Log In</Text>
+              <Text style={styles.modeButtonSubtext}>For existing users</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.modeButton}
+              onPress={() => handleModeSelect('register')}
+            >
+              <Text style={styles.modeButtonText}>New User</Text>
+              <Text style={styles.modeButtonSubtext}>Create account</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </KeyboardAvoidingView>
+    );
+  }
+
+  // Login or Register form
   return (
-    <KeyboardAvoidingView 
-      style={styles.container} 
+    <KeyboardAvoidingView
+      style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <View style={styles.content}>
-        <Text style={styles.title}>🏆 ТопРейт</Text>
+        <View style={styles.headerRow}>
+          <Text style={styles.title}>🏆 TopRate</Text>
+          <TouchableOpacity
+            style={styles.helpButton}
+            onPress={() => setIsHelpVisible(true)}
+          >
+            <Text style={styles.helpButtonText}>?</Text>
+          </TouchableOpacity>
+        </View>
+        <Text style={styles.tagline}>
+          {t('help.purpose')}
+        </Text>
         <Text style={styles.subtitle}>
-          {isRegister ? 'Регистрация' : 'Вход в приложение'}
+          {mode === 'register' ? 'Create Account' : 'Log In'}
         </Text>
 
         <View style={styles.form}>
           <TextInput
             style={styles.input}
-            placeholder="Имя пользователя"
+            placeholder="Username"
             value={username}
             onChangeText={setUsername}
             autoCapitalize="none"
+            maxLength={8}
           />
-
-          {isRegister && (
-            <TextInput
-              style={styles.input}
-              placeholder="Email"
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-            />
-          )}
 
           <TextInput
             style={styles.input}
-            placeholder="Пароль"
+            placeholder="Password"
             value={password}
             onChangeText={setPassword}
             secureTextEntry
           />
 
-          <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
+          <TouchableOpacity
+            style={[styles.submitButton, isLoading && styles.submitButtonDisabled]}
+            onPress={handleSubmit}
+            disabled={isLoading}
+          >
             <Text style={styles.submitButtonText}>
-              {isRegister ? 'Зарегистрироваться' : 'Войти'}
+              {isLoading
+                ? 'Loading...'
+                : mode === 'register'
+                ? 'Create Account'
+                : 'Log In'}
             </Text>
           </TouchableOpacity>
 
-          <TouchableOpacity 
-            style={styles.switchButton} 
-            onPress={() => setIsRegister(!isRegister)}
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => {
+              setMode('select');
+              setUsername('');
+              setPassword('');
+            }}
           >
-            <Text style={styles.switchButtonText}>
-              {isRegister 
-                ? 'Уже есть аккаунт? Войти' 
-                : 'Нет аккаунта? Зарегистрироваться'
-              }
-            </Text>
+            <Text style={styles.backButtonText}>← Back</Text>
           </TouchableOpacity>
         </View>
       </View>
+
+      <Modal
+        visible={isHelpVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setIsHelpVisible(false)}
+      >
+        <View style={styles.helpOverlay}>
+          <View style={styles.helpContent}>
+            <View style={styles.helpHeader}>
+              <Text style={styles.helpTitle}>{t('help.title')}</Text>
+              <TouchableOpacity
+                style={styles.closeButton}
+                onPress={() => setIsHelpVisible(false)}
+              >
+                <Text style={styles.closeButtonText}>✕</Text>
+              </TouchableOpacity>
+            </View>
+            <ScrollView style={styles.helpBody} showsVerticalScrollIndicator={false}>
+              <Text style={styles.helpPurpose}>{t('help.purpose')}</Text>
+              {helpSections.map((section, index) => (
+                <View key={`section-${index}`} style={styles.helpSectionWrapper}>
+                  {section.title ? (
+                    <Text style={styles.helpSectionTitle}>{section.title}</Text>
+                  ) : null}
+                  {section.items.map((item, itemIndex) => (
+                    <Text key={`item-${index}-${itemIndex}`} style={styles.helpText}>
+                      {item}
+                    </Text>
+                  ))}
+                </View>
+              ))}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </KeyboardAvoidingView>
   );
 };
@@ -110,65 +538,188 @@ const LoginScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#F5F5F5',
   },
   content: {
     flex: 1,
     justifyContent: 'center',
+    alignItems: 'center',
     padding: 20,
+    gap: 24,
+  },
+  headerRow: {
+    width: '100%',
+    maxWidth: 320,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   title: {
     fontSize: 32,
     fontWeight: 'bold',
-    textAlign: 'center',
-    marginBottom: 10,
-    color: '#2196F3',
+    color: '#FF9500',
+  },
+  tagline: {
+    width: '100%',
+    maxWidth: 320,
+    fontSize: 14,
+    color: '#555',
+    lineHeight: 20,
+    textAlign: 'left',
   },
   subtitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#333',
+    marginTop: -10,
+  },
+  modeSelectionContainer: {
+    width: '100%',
+    maxWidth: 300,
+    gap: 20,
+  },
+  modeButton: {
+    backgroundColor: '#FF9500',
+    paddingVertical: 20,
+    paddingHorizontal: 30,
+    borderRadius: 12,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  modeButtonText: {
+    color: '#FFFFFF',
     fontSize: 18,
-    textAlign: 'center',
-    marginBottom: 30,
-    color: '#666',
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  modeButtonSubtext: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    opacity: 0.9,
   },
   form: {
-    backgroundColor: 'white',
-    padding: 20,
-    borderRadius: 10,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
+    width: '100%',
+    maxWidth: 300,
+    marginTop: -10,
   },
   input: {
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: '#DDD',
     borderRadius: 8,
     padding: 15,
-    marginBottom: 15,
     fontSize: 16,
+    marginBottom: 15,
   },
   submitButton: {
-    backgroundColor: '#2196F3',
-    padding: 15,
+    backgroundColor: '#FF9500',
+    paddingVertical: 15,
     borderRadius: 8,
     alignItems: 'center',
-    marginBottom: 15,
+    marginTop: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  submitButtonDisabled: {
+    opacity: 0.6,
   },
   submitButtonText: {
-    color: 'white',
+    color: '#FFFFFF',
     fontSize: 16,
     fontWeight: 'bold',
   },
-  switchButton: {
+  backButton: {
+    marginTop: 20,
     alignItems: 'center',
   },
-  switchButtonText: {
-    color: '#2196F3',
+  backButtonText: {
+    color: '#666',
     fontSize: 14,
+  },
+  helpButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: '#FFB84D',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  helpButtonText: {
+    color: '#fff',
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+  helpOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'flex-end',
+  },
+  helpContent: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 20,
+    maxHeight: '80%',
+  },
+  helpHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  helpTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#333',
+  },
+  closeButton: {
+    width: 30,
+    height: 30,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F0F0F0',
+  },
+  closeButtonText: {
+    fontSize: 16,
+    color: '#666',
+    fontWeight: '600',
+  },
+  helpBody: {
+    maxHeight: '100%',
+  },
+  helpPurpose: {
+    fontSize: 14,
+    color: '#444',
+    lineHeight: 20,
+    marginBottom: 16,
+  },
+  helpSectionWrapper: {
+    marginBottom: 14,
+  },
+  helpSectionTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 6,
+  },
+  helpText: {
+    fontSize: 14,
+    color: '#555',
+    lineHeight: 20,
+    marginBottom: 4,
   },
 });
 
