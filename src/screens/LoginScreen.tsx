@@ -525,7 +525,8 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    padding: 20,
+    paddingTop: 40,
+    paddingHorizontal: 20,
     paddingBottom: 30,
     gap: 20,
   },
