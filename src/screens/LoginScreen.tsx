@@ -539,7 +539,7 @@ const styles = StyleSheet.create({
     fontSize: 32,
     fontWeight: 'bold',
     color: '#FF9500',
-    marginTop: 16,
+    marginTop: 8,
   },
   helpContainer: {
     width: '100%',
