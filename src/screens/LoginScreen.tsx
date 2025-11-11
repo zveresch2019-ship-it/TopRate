@@ -543,7 +543,7 @@ const styles = StyleSheet.create({
   },
   helpContainer: {
     width: '100%',
-    maxWidth: 360,
+    maxWidth: 400,
     alignSelf: 'center',
     height: 600,
     maxHeight: 660,
