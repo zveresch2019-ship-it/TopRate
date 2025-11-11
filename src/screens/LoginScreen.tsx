@@ -532,6 +532,7 @@ const styles = StyleSheet.create({
   content: {
     width: '100%',
     maxWidth: 380,
+    alignItems: 'center',
     gap: 16,
   },
   title: {
@@ -541,6 +542,8 @@ const styles = StyleSheet.create({
   },
   helpContainer: {
     width: '100%',
+    maxWidth: 360,
+    alignSelf: 'center',
     height: 460,
     maxHeight: 520,
     backgroundColor: '#FFFFFF',
@@ -563,12 +566,14 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 320,
     gap: 16,
-    alignItems: 'flex-end',
+    alignItems: 'center',
   },
   modeButton: {
     backgroundColor: '#FF9500',
-    width: 200,
+    width: 300,
+    maxWidth: '100%',
     paddingVertical: 12,
+    paddingHorizontal: 12,
     borderRadius: 10,
     alignItems: 'center',
     shadowColor: '#000',
