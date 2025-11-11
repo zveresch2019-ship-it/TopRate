@@ -393,7 +393,7 @@ const LoginScreen: React.FC<{
       t('help.change_factors'),
       t('help.rating_change_only_matches'),
     ].filter(Boolean);
-    return lines.join('\n\n');
+    return lines.join('\n');
   }, [t]);
 
   const renderHelp = () => (
@@ -524,17 +524,14 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
     padding: 20,
-    paddingBottom: 40,
-    gap: 20,
+    paddingBottom: 30,
+    gap: 18,
   },
   content: {
     width: '100%',
     maxWidth: 380,
-    alignItems: 'center',
-    gap: 18,
+    gap: 16,
   },
   title: {
     fontSize: 32,
@@ -543,9 +540,11 @@ const styles = StyleSheet.create({
   },
   helpContainer: {
     width: '100%',
+    height: 300,
+    maxHeight: 320,
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
-    paddingVertical: 10,
+    paddingVertical: 12,
     paddingHorizontal: 14,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
@@ -649,17 +648,18 @@ const styles = StyleSheet.create({
     lineHeight: 19,
   },
   helpText: {
-    fontSize: 11,
+    fontSize: 12,
     color: '#555',
-    lineHeight: 17,
-    textAlign: 'left',
+    lineHeight: 18,
+    textAlign: 'justify',
   },
   helpScroll: {
     width: '100%',
-    maxHeight: 130,
+    height: '100%',
   },
   helpScrollContent: {
     paddingRight: 6,
+    paddingVertical: 4,
   },
 });
 
