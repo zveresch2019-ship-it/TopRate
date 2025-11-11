@@ -384,31 +384,27 @@ const LoginScreen: React.FC<{
     }
   };
 
-  const helpItems = useMemo(() => (
-    [
+  const helpTextString = useMemo(() => {
+    const lines = [
+      t('help.purpose'),
       t('help.add_players'),
       t('help.initial_rating'),
       t('help.rating_changes'),
       t('help.change_factors'),
       t('help.rating_change_only_matches'),
-    ]
-      .filter(Boolean)
-      .map((item, index, arr) =>
-        index === arr.length - 1 ? item : `${item}\n`)
-  ), [t]);
+    ].filter(Boolean);
+    return lines.join('\n\n');
+  }, [t]);
 
   const renderHelp = () => (
     <View style={styles.helpContainer}>
-      <Text style={styles.tagline}>{t('help.purpose')}</Text>
       <ScrollView
         style={styles.helpScroll}
         contentContainerStyle={styles.helpScrollContent}
-        showsVerticalScrollIndicator={true}
-        persistentScrollbar={true}
+        showsVerticalScrollIndicator
+        persistentScrollbar
       >
-        {helpItems.map((item, index) => (
-          <Text key={`help-${index}`} style={styles.helpText}>{item}</Text>
-        ))}
+        <Text style={styles.helpText}>{helpTextString}</Text>
       </ScrollView>
     </View>
   );
@@ -549,20 +545,13 @@ const styles = StyleSheet.create({
     width: '100%',
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
-    paddingVertical: 12,
+    paddingVertical: 10,
     paddingHorizontal: 14,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.05,
     shadowRadius: 10,
     elevation: 2,
-    gap: 10,
-  },
-  tagline: {
-    fontSize: 12,
-    color: '#444',
-    lineHeight: 18,
-    textAlign: 'justify',
   },
   subtitle: {
     fontSize: 20,
@@ -660,10 +649,10 @@ const styles = StyleSheet.create({
     lineHeight: 19,
   },
   helpText: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#555',
-    lineHeight: 18,
-    textAlign: 'justify',
+    lineHeight: 17,
+    textAlign: 'left',
   },
   helpScroll: {
     width: '100%',
@@ -671,7 +660,6 @@ const styles = StyleSheet.create({
   },
   helpScrollContent: {
     paddingRight: 6,
-    gap: 6,
   },
 });
 
