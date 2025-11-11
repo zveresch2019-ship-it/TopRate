@@ -11,6 +11,8 @@ interface LanguageContextType {
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
+const DEFAULT_LANGUAGE: Language = 'en';
+
 // Переводы
 const translations = {
   ru: {
@@ -22,7 +24,7 @@ const translations = {
     
     // Навигация
     'nav.home': 'Главная',
-    'nav.players': 'Игроки',
+    'nav.players': 'Рейтинг',
     'nav.matches': 'Матчи',
     'nav.rating': 'Рейтинг',
     
@@ -37,7 +39,7 @@ const translations = {
     'home.season': 'Сезон',
     
     // Игроки
-    'players.title': 'Игроки',
+    'players.title': 'Рейтинг',
     'players.add_player': 'Добавить игрока',
     'players.player_name': 'Имя игрока',
     'players.rating': 'Рейтинг',
@@ -112,6 +114,8 @@ const translations = {
     'messages.pdf_error': 'Не удалось создать PDF файл',
     'messages.share_error': 'Не удалось поделиться данными',
     'messages.email_error': 'Не удалось открыть почтовое приложение',
+    'messages.login_error': 'Неверное имя пользователя или пароль. Пожалуйста, зарегистрируйтесь сначала.',
+    'messages.login_failed': 'Ошибка аутентификации. Пожалуйста, попробуйте снова.',
     'messages.welcome_title': 'Добро пожаловать! 👋',
     'messages.welcome_text': 'Начните с добавления игроков и проведения матчей для создания рейтинга.',
     'messages.debug_team_info': 'Отладка: Команда A: {homeCount} игроков, Команда B: {awayCount} игроков',
@@ -167,6 +171,7 @@ const translations = {
     'matches.players_count': 'игрок',
     'matches.players_count_2': 'игрока',
     'matches.players_count_5': 'игроков',
+    'matches.delete_match': 'Отмена',
     
     // Рейтинг
     'rating.title': 'Рейтинг',
@@ -212,7 +217,7 @@ const translations = {
     
     // Navigation
     'nav.home': 'Home',
-    'nav.players': 'Players',
+    'nav.players': 'Rating',
     'nav.matches': 'Matches',
     'nav.rating': 'Rating',
     
@@ -227,7 +232,7 @@ const translations = {
     'home.season': 'Season',
     
     // Players
-    'players.title': 'Players',
+    'players.title': 'Rating',
     'players.add_player': 'Add Player',
     'players.player_name': 'Player Name',
     'players.rating': 'Rating',
@@ -302,6 +307,8 @@ const translations = {
     'messages.pdf_error': 'Failed to create PDF file',
     'messages.share_error': 'Failed to share data',
     'messages.email_error': 'Failed to open email app',
+    'messages.login_error': 'Invalid username or password. Please register first.',
+    'messages.login_failed': 'Authentication failed. Please try again.',
     'messages.welcome_title': 'Welcome! 👋',
     'messages.welcome_text': 'Start by adding players and conducting matches to create a rating.',
     'messages.debug_team_info': 'Debug: Team A: {homeCount} players, Team B: {awayCount} players',
@@ -357,6 +364,7 @@ const translations = {
     'matches.players_count': 'player',
     'matches.players_count_2': 'players',
     'matches.players_count_5': 'players',
+    'matches.delete_match': 'Delete',
     
     // Rating
     'rating.title': 'Rating',
@@ -400,15 +408,18 @@ interface LanguageProviderProps {
 }
 
 export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) => {
-  const [language, setLanguageState] = useState<Language>('ru');
+  const [language, setLanguageState] = useState<Language>(DEFAULT_LANGUAGE);
 
   // Загружаем сохраненный язык
   useEffect(() => {
     const loadLanguage = async () => {
       try {
         const savedLanguage = await AsyncStorage.getItem('app_language');
-        if (savedLanguage && (savedLanguage === 'ru' || savedLanguage === 'en')) {
-          setLanguageState(savedLanguage as Language);
+        if (savedLanguage === 'en') {
+          setLanguageState('en');
+        } else {
+          setLanguageState(DEFAULT_LANGUAGE);
+          await AsyncStorage.setItem('app_language', DEFAULT_LANGUAGE);
         }
       } catch (error) {
         console.error('Error loading language:', error);
@@ -420,8 +431,9 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) 
   // Сохраняем язык при изменении
   const setLanguage = async (lang: Language) => {
     try {
-      setLanguageState(lang);
-      await AsyncStorage.setItem('app_language', lang);
+      const nextLanguage: Language = lang === 'en' ? 'en' : DEFAULT_LANGUAGE;
+      setLanguageState(nextLanguage);
+      await AsyncStorage.setItem('app_language', nextLanguage);
     } catch (error) {
       console.error('Error saving language:', error);
     }
