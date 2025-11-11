@@ -391,7 +391,6 @@ const LoginScreen: React.FC<{
       t('help.initial_rating'),
       t('help.rating_changes'),
       t('help.change_factors'),
-      t('help.rating_change_only_matches'),
     ].filter(Boolean);
     return lines.join('\n');
   }, [t]);
@@ -546,8 +545,8 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 500,
     alignSelf: 'center',
-    height: 600,
-    maxHeight: 660,
+    height: 660,
+    maxHeight: 720,
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
     paddingVertical: 14,
@@ -574,8 +573,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#FF9500',
     width: 300,
     maxWidth: '100%',
-    paddingVertical: 6,
-    minHeight: 48,
+    paddingVertical: 4,
+    minHeight: 42,
     paddingHorizontal: 12,
     borderRadius: 10,
     alignItems: 'center',
@@ -587,14 +586,14 @@ const styles = StyleSheet.create({
   },
   modeButtonText: {
     color: '#FFFFFF',
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: 'bold',
     marginBottom: 2,
   },
   modeButtonSubtext: {
     color: '#FFFFFF',
-    fontSize: 12,
-    opacity: 0.75,
+    fontSize: 11,
+    opacity: 0.72,
   },
   form: {
     width: '100%',
