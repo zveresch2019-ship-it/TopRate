@@ -359,8 +359,11 @@ const apiRequest = async (
       // Ошибки валидации логируем как INFO, не ERROR
       console.log(`ℹ️ API Validation Error [${method} ${endpoint}]:`, error?.message || error);
     } else {
-      // Другие ошибки логируем как ERROR
-      console.error(`❌ API Error [${method} ${endpoint}]:`, error);
+      // Другие ошибки логируем как ERROR (кроме ожидаемых Invalid credentials)
+      const normalized = (error?.message || '').toLowerCase();
+      if (!(normalized.includes('invalid username or password') || normalized.includes('invalid credentials'))) {
+        console.error(`❌ API Error [${method} ${endpoint}]:`, error);
+      }
     }
     
     // Если ошибка уже обработана (имеет понятное сообщение), просто пробрасываем
