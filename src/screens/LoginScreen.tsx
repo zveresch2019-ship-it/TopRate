@@ -532,7 +532,7 @@ const styles = StyleSheet.create({
   content: {
     width: '100%',
     maxWidth: 520,
-    alignItems: 'center',
+    alignItems: 'stretch',
     gap: 8,
   },
   title: {
@@ -540,6 +540,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#FF9500',
     marginTop: 0,
+    marginBottom: 4,
   },
   helpContainer: {
     width: '100%',
@@ -569,6 +570,7 @@ const styles = StyleSheet.create({
     maxWidth: 320,
     gap: 16,
     alignItems: 'center',
+    alignSelf: 'center',
   },
   modeButton: {
     backgroundColor: '#FF9500',
