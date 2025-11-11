@@ -403,6 +403,7 @@ const LoginScreen: React.FC<{
         contentContainerStyle={styles.helpScrollContent}
         showsVerticalScrollIndicator
         persistentScrollbar
+        nestedScrollEnabled
       >
         <Text style={styles.helpText}>{helpTextString}</Text>
       </ScrollView>
@@ -540,8 +541,8 @@ const styles = StyleSheet.create({
   },
   helpContainer: {
     width: '100%',
-    height: 360,
-    maxHeight: 400,
+    height: 420,
+    maxHeight: 460,
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
     paddingVertical: 14,
