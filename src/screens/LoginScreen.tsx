@@ -524,16 +524,16 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    paddingTop: 40,
+    paddingTop: 32,
     paddingHorizontal: 20,
     paddingBottom: 30,
-    gap: 12,
+    gap: 8,
   },
   content: {
     width: '100%',
     maxWidth: 520,
     alignItems: 'center',
-    gap: 16,
+    gap: 8,
   },
   title: {
     fontSize: 32,
