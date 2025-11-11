@@ -527,7 +527,7 @@ const styles = StyleSheet.create({
     paddingTop: 40,
     paddingHorizontal: 20,
     paddingBottom: 30,
-    gap: 16,
+    gap: 12,
   },
   content: {
     width: '100%',
@@ -549,7 +549,7 @@ const styles = StyleSheet.create({
     maxHeight: 720,
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
-    paddingTop: 4,
+    paddingTop: 0,
     paddingBottom: 14,
     paddingHorizontal: 14,
     shadowColor: '#000',
