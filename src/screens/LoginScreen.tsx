@@ -444,6 +444,7 @@ const LoginScreen: React.FC<{
           scrollEventThrottle={16}
           snapToInterval={helpWidth || undefined}
           decelerationRate="fast"
+          bounces={false}
         >
           {extendedSlides.map((slide, index) => {
             const inputRange = [
@@ -454,24 +455,46 @@ const LoginScreen: React.FC<{
             const scale = helpWidth
               ? scrollX.interpolate({
                   inputRange,
-                  outputRange: [0.92, 1, 0.92],
+                  outputRange: [0.9, 1, 0.9],
                   extrapolate: 'clamp',
                 })
               : 1;
             const opacity = helpWidth
               ? scrollX.interpolate({
                   inputRange,
-                  outputRange: [0.6, 1, 0.6],
+                  outputRange: [0.4, 1, 0.4],
                   extrapolate: 'clamp',
                 })
               : 1;
+            const rotateY = helpWidth
+              ? scrollX.interpolate({
+                  inputRange,
+                  outputRange: ['18deg', '0deg', '-18deg'],
+                  extrapolate: 'clamp',
+                })
+              : '0deg';
+            const translateX = helpWidth
+              ? scrollX.interpolate({
+                  inputRange,
+                  outputRange: [-30, 0, 30],
+                  extrapolate: 'clamp',
+                })
+              : 0;
             return (
               <Animated.View
                 key={`help-${index}`}
                 style={[
                   styles.helpSlide,
                   helpWidth ? { width: helpWidth } : null,
-                  { transform: [{ scale }], opacity },
+                  {
+                    transform: [
+                      { perspective: 800 },
+                      { translateX },
+                      { rotateY },
+                      { scale },
+                    ],
+                    opacity,
+                  },
                 ]}
               >
                 <Text style={styles.helpText}>{slide}</Text>
@@ -684,14 +707,15 @@ const styles = StyleSheet.create({
     gap: 16,
     alignItems: 'center',
     alignSelf: 'center',
+    marginTop: 18,
   },
   modeButton: {
     backgroundColor: '#FF9500',
-    width: 300,
+    width: 320,
     maxWidth: '100%',
-    paddingVertical: 6,
-    minHeight: 44,
-    paddingHorizontal: 12,
+    paddingVertical: 12,
+    minHeight: 52,
+    paddingHorizontal: 20,
     borderRadius: 10,
     alignItems: 'center',
     shadowColor: '#000',
@@ -701,18 +725,18 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   modeButtonSecondary: {
-    marginTop: 8,
+    marginTop: 12,
   },
   modeButtonText: {
     color: '#FFFFFF',
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: 'bold',
     marginBottom: 2,
   },
   modeButtonSubtext: {
     color: '#FFFFFF',
-    fontSize: 11,
-    opacity: 0.72,
+    fontSize: 12,
+    opacity: 0.8,
   },
   form: {
     width: '100%',
