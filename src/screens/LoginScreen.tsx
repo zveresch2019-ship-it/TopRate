@@ -546,6 +546,7 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 500,
     alignSelf: 'center',
+    marginTop: -8,
     height: 660,
     maxHeight: 720,
     backgroundColor: '#FFFFFF',
