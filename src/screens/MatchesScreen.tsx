@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from 'react';
+import React, {useState, useEffect, useRef} from 'react';
 import {
   View,
   Text,
@@ -13,17 +13,30 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {useRating} from '../context/RatingContext';
 import {useLanguage} from '../context/LanguageContext';
+import {useSport} from '../context/SportContext';
+import {useAuth} from '../context/AuthContext';
 import {Player, Team} from '../types';
 
 
 const MatchesScreen: React.FC = () => {
   const { t, language } = useLanguage();
-  const {players, matches, addMatch, editMatch, removeMatch, deleteMatch, getRecentMatches} = useRating();
+  const { currentSport } = useSport();
+  const { currentUser } = useAuth();
+  const {players, matches: matchesRaw, addMatch, editMatch, removeMatch, deleteMatch, getRecentMatches} = useRating();
+  
+  // Проверяем, является ли пользователь админом
+  const isAdmin = currentUser?.role === 'admin';
+  
+  // Защита от undefined
+  const matches = matchesRaw || [];
+  const safePlayers = players || [];
   const [homeTeam, setHomeTeam] = useState<Team>({id: 'home', name: 'Команда A', playerIds: [], totalRating: 0});
   const [awayTeam, setAwayTeam] = useState<Team>({id: 'away', name: 'Команда B', playerIds: [], totalRating: 0});
   const [homeScore, setHomeScore] = useState<string>('');
   const [awayScore, setAwayScore] = useState<string>('');
   const [competition, setCompetition] = useState<string>('Матч');
+  const [isSavingMatch, setIsSavingMatch] = useState<boolean>(false);
+  const isSavingMatchRef = useRef<boolean>(false);
   
   // Состояние для отмены матча
   const [isLastMatchCancelled, setIsLastMatchCancelled] = useState<boolean>(false);
@@ -79,9 +92,12 @@ const MatchesScreen: React.FC = () => {
 
   // Обновляем totalRating команд при изменении players
   useEffect(() => {
+    // Проверяем что players загружены
+    if (!safePlayers || safePlayers.length === 0) return;
+    
     const updateTeamRating = (team: Team) => {
       const newTotalRating = team.playerIds.reduce((sum, id) => {
-        const p = players.find(pl => pl.id === id);
+        const p = safePlayers.find(pl => pl.id === id);
         return sum + (p?.rating || 0);
       }, 0);
       return { ...team, totalRating: newTotalRating };
@@ -93,10 +109,15 @@ const MatchesScreen: React.FC = () => {
     if (awayTeam.playerIds.length > 0) {
       setAwayTeam(updateTeamRating(awayTeam));
     }
-  }, [players]);
+  }, [players, safePlayers.length]);
   
   // Функция для расчета изменений рейтинга игроков
   const calculatePlayerRatingChanges = () => {
+    // Проверка что игроки загружены
+    if (!safePlayers || safePlayers.length === 0) {
+      return {};
+    }
+    
     if (homeTeam.playerIds.length === 0 || awayTeam.playerIds.length === 0) {
       return {};
     }
@@ -119,35 +140,59 @@ const MatchesScreen: React.FC = () => {
     const winnerIds = isTeamAWinner ? homeTeam.playerIds : awayTeam.playerIds;
     const loserIds = isTeamAWinner ? awayTeam.playerIds : homeTeam.playerIds;
     
-    const RD = winnerSum - loserSum;
+    // ✅ ОРИГИНАЛЬНАЯ ФОРМУЛА из AppStore версии (адаптирована для баскетбола)
     const totalPlayers = homeTeam.playerIds.length + awayTeam.playerIds.length;
-    const ES = (RD / (totalPlayers / 2)) / 200 * 6;
-    const goalDiff = winnerScore - loserScore;
-    const goalRatio = loserScore / winnerScore;
+    
+    // Для баскетбола используем разницу средних рейтингов команды A относительно команды B, для футбола - общих
+    // ES должен быть положительным, если команда A сильнее, и отрицательным, если команда A слабее
+    const RD = currentSport === 'basketball'
+      ? (sumA / homeTeam.playerIds.length) - (sumB / awayTeam.playerIds.length)  // Баскетбол: средние рейтинги команды A минус команды B
+      : sumA - sumB;  // Футбол: общие рейтинги команды A минус команды B
+    
+    // Разные формулы ES для разных спортов
+    const ES = currentSport === 'basketball'
+      ? RD / 10  // Баскетбол: упрощённая формула
+      : (RD / (totalPlayers / 2)) / 200 * 6;  // Футбол: оригинальная формула
+    
+    // RGD рассчитывается как разница между командой A и командой B (не winner/loser)
+    // RGD должна быть положительной, если команда A выиграла, и отрицательной, если проиграла
+    const goalDiff = adjustedScoreA - adjustedScoreB;
+    // goalRatio всегда должен быть меньше 1: меньший счет делим на больший
+    const minScore = Math.min(adjustedScoreA, adjustedScoreB);
+    const maxScore = Math.max(adjustedScoreA, adjustedScoreB);
+    const goalRatio = maxScore > 0 ? minScore / maxScore : 0;
     const RGD = goalDiff * ((0.8 - goalRatio) + 1);
-    const GV = 7 * ((12 - totalPlayers) / 10 + 1);
+    
+    // Разные формулы GV для разных спортов
+    const GV = currentSport === 'basketball'
+      ? 3 * ((10 - totalPlayers) / 10 + 1)  // Баскетбол: меньший коэффициент, оптимум 10 игроков
+      : 7 * ((12 - totalPlayers) / 10 + 1); // Футбол: оригинальная формула
+    
     const TV = (totalPlayers / 2) * GV * (RGD - ES);
     
     // Рассчитываем изменения рейтингов для каждого игрока
+    // Неважно кто выиграл: знак зависит от TV
+    // Если TV положительный → команда A получает плюс, команда B получает минус
+    // Если TV отрицательный → команда A получает минус, команда B получает плюс
     const changes: {[playerId: string]: number} = {};
     
-    // Для игроков победившей команды
-    const winnerTotalRating = winnerIds.reduce((acc, id) => acc + (players.find(p => p.id === id)?.rating || 0), 0);
-    winnerIds.forEach(id => {
-      const player = players.find(p => p.id === id);
+    // Для игроков команды A
+    const teamATotalRating = homeTeam.playerIds.reduce((acc, id) => acc + (safePlayers.find(p => p.id === id)?.rating || 0), 0);
+    homeTeam.playerIds.forEach(id => {
+      const player = safePlayers.find(p => p.id === id);
       if (player) {
-        const playerShare = player.rating / winnerTotalRating;
+        const playerShare = player.rating / teamATotalRating;
         const change = Math.round(TV * playerShare);
         changes[id] = change;
       }
     });
     
-    // Для игроков проигравшей команды
-    const loserTotalRating = loserIds.reduce((acc, id) => acc + (players.find(p => p.id === id)?.rating || 0), 0);
-    loserIds.forEach(id => {
-      const player = players.find(p => p.id === id);
+    // Для игроков команды B
+    const teamBTotalRating = awayTeam.playerIds.reduce((acc, id) => acc + (safePlayers.find(p => p.id === id)?.rating || 0), 0);
+    awayTeam.playerIds.forEach(id => {
+      const player = safePlayers.find(p => p.id === id);
       if (player) {
-        const playerShare = player.rating / loserTotalRating;
+        const playerShare = player.rating / teamBTotalRating;
         const change = Math.round(-TV * playerShare);
         changes[id] = change;
       }
@@ -195,13 +240,34 @@ const MatchesScreen: React.FC = () => {
     const winnerScore = isTeamAWinner ? adjustedScoreA : adjustedScoreB;
     const loserScore = isTeamAWinner ? adjustedScoreB : adjustedScoreA;
     
-    const RD = winnerSum - loserSum;
+    // ✅ ОРИГИНАЛЬНАЯ ФОРМУЛА из AppStore версии (адаптирована для баскетбола)
     const totalPlayers = homeTeam.playerIds.length + awayTeam.playerIds.length;
-    const ES = (RD / (totalPlayers / 2)) / 200 * 6;
-    const goalDiff = winnerScore - loserScore;
-    const goalRatio = loserScore / winnerScore;
+    
+    // Для баскетбола используем разницу средних рейтингов команды A относительно команды B, для футбола - общих
+    // ES должен быть положительным, если команда A сильнее, и отрицательным, если команда A слабее
+    const RD = currentSport === 'basketball'
+      ? (sumA / homeTeam.playerIds.length) - (sumB / awayTeam.playerIds.length)  // Баскетбол: средние рейтинги команды A минус команды B
+      : sumA - sumB;  // Футбол: общие рейтинги команды A минус команды B
+    
+    // Разные формулы ES для разных спортов
+    const ES = currentSport === 'basketball'
+      ? RD / 10  // Баскетбол: упрощённая формула
+      : (RD / (totalPlayers / 2)) / 200 * 6;  // Футбол: оригинальная формула
+    
+    // RGD рассчитывается как разница между командой A и командой B (не winner/loser)
+    // RGD должна быть положительной, если команда A выиграла, и отрицательной, если проиграла
+    const goalDiff = adjustedScoreA - adjustedScoreB;
+    // goalRatio всегда должен быть меньше 1: меньший счет делим на больший
+    const minScore = Math.min(adjustedScoreA, adjustedScoreB);
+    const maxScore = Math.max(adjustedScoreA, adjustedScoreB);
+    const goalRatio = maxScore > 0 ? minScore / maxScore : 0;
     const RGD = goalDiff * ((0.8 - goalRatio) + 1);
-    const GV = 7 * ((12 - totalPlayers) / 10 + 1);
+    
+    // Разные формулы GV для разных спортов
+    const GV = currentSport === 'basketball'
+      ? 3 * ((10 - totalPlayers) / 10 + 1)  // Баскетбол: меньший коэффициент, оптимум 10 игроков
+      : 7 * ((12 - totalPlayers) / 10 + 1); // Футбол: оригинальная формула
+    
     const TV = (totalPlayers / 2) * GV * (RGD - ES);
     
     return {
@@ -248,7 +314,7 @@ const MatchesScreen: React.FC = () => {
 
   const getTeamPlayers = (teamType: 'home' | 'away'): Player[] => {
     const team = teamType === 'home' ? homeTeam : awayTeam;
-    return players
+    return safePlayers
       .filter(player => team.playerIds.includes(player.id))
       .sort((a, b) => b.rating - a.rating); // Сортируем по убыванию рейтинга
   };
@@ -269,12 +335,12 @@ const MatchesScreen: React.FC = () => {
       return;
     }
 
-    const player = players.find(p => p.id === playerId);
+    const player = safePlayers.find(p => p.id === playerId);
     if (!player) return;
 
     const newPlayerIds = [...team.playerIds, playerId];
     const newTotalRating = newPlayerIds.reduce((sum, id) => {
-      const p = players.find(pl => pl.id === id);
+      const p = safePlayers.find(pl => pl.id === id);
       return sum + (p?.rating || 0);
     }, 0);
 
@@ -303,7 +369,7 @@ const MatchesScreen: React.FC = () => {
     const team = teamType === 'home' ? homeTeam : awayTeam;
     const newPlayerIds = team.playerIds.filter(id => id !== playerId);
     const newTotalRating = newPlayerIds.reduce((sum, id) => {
-      const p = players.find(pl => pl.id === id);
+      const p = safePlayers.find(pl => pl.id === id);
       return sum + (p?.rating || 0);
     }, 0);
 
@@ -329,30 +395,108 @@ const MatchesScreen: React.FC = () => {
   };
 
   const handleSaveMatch = async () => {
-    // Проверки
-    if (homeTeam.playerIds.length === 0 || awayTeam.playerIds.length === 0) {
-      Alert.alert(language === 'ru' ? 'Ошибка' : 'Error', t('messages.team_must_have_players'));
+    if (isSavingMatchRef.current) {
+      console.log('⚠️ MatchesScreen: save match pressed while already saving, ignoring');
       return;
     }
 
+    // Проверяем, является ли пользователь админом
+    if (!isAdmin) {
+      Alert.alert(
+        language === 'ru' ? 'Ошибка' : 'Error',
+        language === 'ru' ? 'Только администратор может создавать матчи' : 'Only admin can create matches'
+      );
+      return;
+    }
+
+    // Проверки команд
+    if (homeTeam.playerIds.length === 0 || awayTeam.playerIds.length === 0) {
+      Alert.alert(
+        language === 'ru' ? 'Ошибка' : 'Error', 
+        t('messages.team_must_have_players')
+      );
+      return;
+    }
+
+    // Проверка минимального количества игроков
+    if (homeTeam.playerIds.length < 1 || awayTeam.playerIds.length < 1) {
+      Alert.alert(
+        language === 'ru' ? 'Ошибка' : 'Error',
+        language === 'ru' 
+          ? 'Каждая команда должна иметь хотя бы одного игрока'
+          : 'Each team must have at least one player'
+      );
+      return;
+    }
+
+    // Валидация счёта
     const homeScoreNum = parseInt(homeScore) || 0;
     const awayScoreNum = parseInt(awayScore) || 0;
 
+    if (homeScore === '' || awayScore === '') {
+      Alert.alert(
+        language === 'ru' ? 'Ошибка' : 'Error',
+        language === 'ru' ? 'Введите счёт для обеих команд' : 'Enter score for both teams'
+      );
+      return;
+    }
+
     if (homeScoreNum < 0 || awayScoreNum < 0) {
-      Alert.alert(language === 'ru' ? 'Ошибка' : 'Error', t('messages.enter_valid_score'));
+      Alert.alert(
+        language === 'ru' ? 'Ошибка' : 'Error', 
+        language === 'ru' ? 'Счёт не может быть отрицательным' : 'Score cannot be negative'
+      );
+      return;
+    }
+
+    if (homeScoreNum > 999 || awayScoreNum > 999) {
+      Alert.alert(
+        language === 'ru' ? 'Ошибка' : 'Error',
+        language === 'ru' ? 'Счёт слишком большой (максимум 999)' : 'Score too large (max 999)'
+      );
       return;
     }
 
     // Добавляем новый матч
-    const success = await addMatch(homeTeam, awayTeam, homeScoreNum, awayScoreNum, competition);
+    console.log('🔄 MatchesScreen: Calling addMatch...');
+    let success = false;
+    try {
+      setIsSavingMatch(true);
+      isSavingMatchRef.current = true;
+      success = await addMatch(homeTeam, awayTeam, homeScoreNum, awayScoreNum, competition);
+      console.log('🔄 MatchesScreen: addMatch result:', success);
+    } catch (error) {
+      console.error('❌ MatchesScreen: addMatch threw an error:', error);
+      success = false;
+    } finally {
+      setIsSavingMatch(false);
+      isSavingMatchRef.current = false;
+    }
+
     if (success) {
+      console.log('✅ MatchesScreen: Match saved successfully, showing alert');
       // Сбрасываем флаг отмены при добавлении нового матча
       setIsLastMatchCancelled(false);
       await saveCancelState(false);
-      Alert.alert(t('messages.match_saved_success'));
+      // Web-уведомление (на RN-web Alert может не показываться)
+      if (typeof window !== 'undefined' && window.alert) {
+        window.alert(t('messages.match_saved_success'));
+      } else {
+        Alert.alert(
+          language === 'ru' ? 'Успех' : 'Success',
+          t('messages.match_saved_success'),
+          [{ text: language === 'ru' ? 'ОК' : 'OK', style: 'default' }]
+        );
+      }
       resetForm();
     } else {
-      Alert.alert(language === 'ru' ? 'Ошибка' : 'Error', t('messages.match_save_error'));
+      console.log('❌ MatchesScreen: Match save failed, showing error alert');
+      // Показываем уведомление об ошибке
+      Alert.alert(
+        language === 'ru' ? 'Ошибка' : 'Error',
+        t('messages.match_save_error'),
+        [{ text: language === 'ru' ? 'ОК' : 'OK', style: 'default' }]
+      );
     }
   };
 
@@ -458,15 +602,23 @@ const MatchesScreen: React.FC = () => {
         {/* Заголовки команд */}
         <View style={styles.teamsHeader}>
           <View style={styles.teamHeader}>
-            <Text style={styles.teamTitle}>{t('matches.team_a')}</Text>
+            <Text style={styles.teamTitle}>{homeTeam.name || t('matches.team_a')}</Text>
             <Text style={styles.teamStats}>
-              {homeTeam.playerIds.length} {getPlayersWord(homeTeam.playerIds.length)} • {t('messages.rating_label')}: {homeTeam.totalRating}
+              {homeTeam.playerIds.length} {language === 'ru' ? 'игр.' : 'pl.'} • {
+                currentSport === 'basketball' 
+                  ? `Avg Rating: ${homeTeam.playerIds.length > 0 ? Math.round(homeTeam.totalRating / homeTeam.playerIds.length) : 0}`
+                  : `${t('messages.rating_label')}: ${homeTeam.totalRating}`
+              }
             </Text>
           </View>
           <View style={styles.teamHeader}>
-            <Text style={styles.teamTitle}>{t('matches.team_b')}</Text>
+            <Text style={styles.teamTitle}>{awayTeam.name || t('matches.team_b')}</Text>
             <Text style={styles.teamStats}>
-              {awayTeam.playerIds.length} {getPlayersWord(awayTeam.playerIds.length)} • {t('messages.rating_label')}: {awayTeam.totalRating}
+              {awayTeam.playerIds.length} {language === 'ru' ? 'игр.' : 'pl.'} • {
+                currentSport === 'basketball' 
+                  ? `Avg Rating: ${awayTeam.playerIds.length > 0 ? Math.round(awayTeam.totalRating / awayTeam.playerIds.length) : 0}`
+                  : `${t('messages.rating_label')}: ${awayTeam.totalRating}`
+              }
             </Text>
           </View>
         </View>
@@ -475,44 +627,61 @@ const MatchesScreen: React.FC = () => {
         {/* Список доступных игроков */}
         <View style={styles.playersListContainer}>
           <Text style={styles.playersListTitle}>
-            {t('messages.available_players')} ({players.filter(p => !homeTeam.playerIds.includes(p.id) && !awayTeam.playerIds.includes(p.id)).length})
+            {t('messages.available_players')} ({safePlayers.filter(p => !homeTeam.playerIds.includes(p.id) && !awayTeam.playerIds.includes(p.id)).length})
           </Text>
           <ScrollView style={styles.playersList} showsVerticalScrollIndicator={true}>
-            {players
-              .filter(player => !homeTeam.playerIds.includes(player.id) && !awayTeam.playerIds.includes(player.id))
+            {safePlayers
               .sort((a, b) => b.rating - a.rating)
-              .map((player, index) => (
-                <View key={player.id} style={styles.playerCard}>
-                  <View style={styles.playerInfo}>
-                    <Text style={styles.playerNumber} numberOfLines={1}>{index + 1}.</Text>
-                    <Text style={styles.playerName} numberOfLines={1}>
-                      {player.name.length > 12 ? player.name.substring(0, 12) + '...' : player.name}
-                    </Text>
-                    <Text style={styles.playerRating} numberOfLines={1}>{Math.round(player.rating)}</Text>
+              .map((player, index) => {
+                const isSelected = homeTeam.playerIds.includes(player.id) || awayTeam.playerIds.includes(player.id);
+                return (
+                  <View key={player.id} style={[styles.playerCard, isSelected && styles.playerCardDisabled]}>
+                    <View style={styles.playerInfo}>
+                      <Text style={[styles.playerNumber, isSelected && styles.textDisabled]} numberOfLines={1}>{index + 1}.</Text>
+                      <Text style={[styles.playerName, isSelected && styles.textDisabled]} numberOfLines={1}>
+                        {player.name.length > 12 ? player.name.substring(0, 12) + '...' : player.name}
+                      </Text>
+                      <Text style={[styles.playerRating, isSelected && styles.textDisabled]} numberOfLines={1}>{Math.round(player.rating)}</Text>
+                    </View>
+                    <View style={styles.playerActions}>
+                      {isAdmin ? (
+                        <>
+                          <TouchableOpacity 
+                            style={[styles.teamButton, styles.teamAButton, isSelected && styles.buttonDisabled]} 
+                            onPress={() => addPlayerToTeam(player.id, 'home')}
+                            disabled={isSelected}
+                          >
+                            <Text style={[styles.teamButtonText, isSelected && styles.textDisabled]}>A</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity 
+                            style={[styles.teamButton, styles.teamBButton, isSelected && styles.buttonDisabled]} 
+                            onPress={() => addPlayerToTeam(player.id, 'away')}
+                            disabled={isSelected}
+                          >
+                            <Text style={[styles.teamButtonText, isSelected && styles.textDisabled]}>B</Text>
+                          </TouchableOpacity>
+                        </>
+                      ) : (
+                        <>
+                          <View style={[styles.teamButton, styles.teamAButton, styles.buttonDisabled]}>
+                            <Text style={[styles.teamButtonText, styles.textDisabled]}>A</Text>
+                          </View>
+                          <View style={[styles.teamButton, styles.teamBButton, styles.buttonDisabled]}>
+                            <Text style={[styles.teamButtonText, styles.textDisabled]}>B</Text>
+                          </View>
+                        </>
+                      )}
+                    </View>
                   </View>
-                  <View style={styles.playerActions}>
-                    <TouchableOpacity
-                      style={[styles.teamButton, styles.teamAButton]}
-                      onPress={() => addPlayerToTeam(player.id, 'home')}
-                    >
-                      <Text style={styles.teamButtonText}>A</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[styles.teamButton, styles.teamBButton]}
-                      onPress={() => addPlayerToTeam(player.id, 'away')}
-                    >
-                      <Text style={styles.teamButtonText}>B</Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              ))}
+                );
+              })}
           </ScrollView>
         </View>
 
         {/* Списки игроков в командах */}
         <View style={styles.teamsContainer}>
           <View style={styles.teamPlayersContainer}>
-            <Text style={styles.teamPlayersTitle}>{t('matches.team_a')}</Text>
+            <Text style={styles.teamPlayersTitle}>{homeTeam.name || t('matches.team_a')}</Text>
             <ScrollView style={styles.teamPlayersList} showsVerticalScrollIndicator={false}>
               {getTeamPlayers('home').map((player, index) => {
                 const ratingChanges = calculatePlayerRatingChanges();
@@ -536,13 +705,18 @@ const MatchesScreen: React.FC = () => {
                         ]} numberOfLines={1}>
                           {change > 0 ? '+' : ''}{change}
                         </Text>
+                        {isAdmin ? (
+                          <TouchableOpacity 
+                            style={styles.removePlayerButton}
+                            onPress={() => removePlayerFromTeam(player.id, 'home')}
+                          >
+                            <Text style={styles.removePlayerButtonText}>×</Text>
+                          </TouchableOpacity>
+                        ) : (
+                          <View style={styles.removePlayerButtonPlaceholder} />
+                        )}
                       </View>
                     </View>
-                    <TouchableOpacity
-                      style={styles.removeButton}
-                      onPress={() => removePlayerFromTeam(player.id, 'home')}>
-                      <Text style={styles.removeButtonText}>❌</Text>
-                    </TouchableOpacity>
                   </View>
                 );
               })}
@@ -550,7 +724,7 @@ const MatchesScreen: React.FC = () => {
           </View>
 
           <View style={styles.teamPlayersContainer}>
-            <Text style={styles.teamPlayersTitle}>{t('matches.team_b')}</Text>
+            <Text style={styles.teamPlayersTitle}>{awayTeam.name || t('matches.team_b')}</Text>
             <ScrollView style={styles.teamPlayersList} showsVerticalScrollIndicator={false}>
               {getTeamPlayers('away').map((player, index) => {
                 const ratingChanges = calculatePlayerRatingChanges();
@@ -574,13 +748,18 @@ const MatchesScreen: React.FC = () => {
                         ]} numberOfLines={1}>
                           {change > 0 ? '+' : ''}{change}
                         </Text>
+                        {isAdmin ? (
+                          <TouchableOpacity 
+                            style={styles.removePlayerButton}
+                            onPress={() => removePlayerFromTeam(player.id, 'away')}
+                          >
+                            <Text style={styles.removePlayerButtonText}>×</Text>
+                          </TouchableOpacity>
+                        ) : (
+                          <View style={styles.removePlayerButtonPlaceholder} />
+                        )}
                       </View>
                     </View>
-                    <TouchableOpacity
-                      style={styles.removeButton}
-                      onPress={() => removePlayerFromTeam(player.id, 'away')}>
-                      <Text style={styles.removeButtonText}>❌</Text>
-                    </TouchableOpacity>
                   </View>
                 );
               })}
@@ -596,32 +775,68 @@ const MatchesScreen: React.FC = () => {
           <TextInput
             style={styles.scoreInput}
             value={homeScore}
-            onChangeText={setHomeScore}
+            onChangeText={(text) => {
+              // Валидация: только цифры, максимум 3 символа
+              const numericText = text.replace(/[^0-9]/g, '');
+              if (numericText.length <= 3) {
+                setHomeScore(numericText);
+              }
+            }}
             keyboardType="numeric"
             placeholder="0"
             selectTextOnFocus={true}
             returnKeyType="done"
-            maxLength={2}
+            maxLength={3}
           />
           <Text style={styles.scoreSeparator}>:</Text>
           <TextInput
             style={styles.scoreInput}
             value={awayScore}
-            onChangeText={setAwayScore}
+            onChangeText={(text) => {
+              // Валидация: только цифры, максимум 3 символа
+              const numericText = text.replace(/[^0-9]/g, '');
+              if (numericText.length <= 3) {
+                setAwayScore(numericText);
+              }
+            }}
             keyboardType="numeric"
             placeholder="0"
             selectTextOnFocus={true}
             returnKeyType="done"
-            maxLength={2}
+            maxLength={3}
           />
         </View>
       </View>
 
       {/* Кнопки действий */}
       <View style={styles.actionButtons}>
-        <TouchableOpacity style={styles.saveButton} onPress={handleSaveMatch}>
-          <Text style={styles.saveButtonText}>💾 {t('matches.save_match')}</Text>
-        </TouchableOpacity>
+        {isAdmin ? (
+          <TouchableOpacity
+            style={[
+              styles.saveButton,
+              (isSavingMatch) && styles.saveButtonDisabled
+            ]}
+            onPress={handleSaveMatch}
+            disabled={isSavingMatch}
+          >
+            <Text
+              style={[
+                styles.saveButtonText,
+                isSavingMatch && styles.saveButtonTextDisabled
+              ]}
+            >
+              {isSavingMatch
+                ? `⏳ ${language === 'ru' ? 'Сохранение...' : 'Saving...'}`
+                : `💾 ${language === 'ru' ? 'Сохранить матч' : 'Save Match'}`}
+            </Text>
+          </TouchableOpacity>
+        ) : (
+          <View style={[styles.saveButton, styles.saveButtonDisabled]}>
+            <Text style={[styles.saveButtonText, styles.saveButtonTextDisabled]}>
+              🔒 {language === 'ru' ? 'Только для администратора' : 'Admin only'}
+            </Text>
+          </View>
+        )}
       </View>
 
       {/* Список матчей */}
@@ -630,7 +845,7 @@ const MatchesScreen: React.FC = () => {
         {matches.length === 0 ? (
           <Text style={styles.emptyText}>{t('matches.no_matches')}</Text>
         ) : (
-          matches.slice().reverse().map((match, index) => (
+          matches.slice().map((match, index) => (
             <View key={`match_${match.id}_${index}`} style={styles.matchCard}>
               <View style={styles.matchHeader}>
                 <Text style={styles.matchDate}>
@@ -640,53 +855,53 @@ const MatchesScreen: React.FC = () => {
               
               <View style={styles.matchTeams}>
                 <View style={styles.teamInfo}>
-                  <Text style={styles.teamName} numberOfLines={1}>
-                    {match.homeTeam.name.length > 12 ? match.homeTeam.name.substring(0, 12) + '...' : match.homeTeam.name}
-                  </Text>
-                  <Text style={styles.teamPlayers}>
-                    {match.homeTeam.playerIds.length} игрок{match.homeTeam.playerIds.length === 1 ? '' : match.homeTeam.playerIds.length < 5 ? 'а' : 'ов'}
-                  </Text>
                   {(() => {
-                    const homeTeamRatingChange = match.homeTeam.playerIds.reduce((total, playerId) => {
-                      return total + (match.ratingChanges[playerId] || 0);
-                    }, 0);
+                    // Имя команды = самый сильный текущий игрок из состава
+                    const homePlayers = safePlayers.filter(p => (match.homeTeam?.playerIds || []).includes(p.id));
+                    const strongest = homePlayers.slice().sort((a,b) => b.rating - a.rating)[0];
+                    const homeName = strongest ? strongest.name : t('matches.team_a');
+                    // Суммарная прибавка по команде
+                    const rc = (match as any).ratingChanges || {};
+                    const delta = (match.homeTeam?.playerIds || []).reduce((acc,id)=> acc + (rc[id] || 0), 0);
                     return (
-                      <Text style={[
-                        styles.ratingChange,
-                        homeTeamRatingChange >= 0 ? styles.ratingGain : styles.ratingLoss
-                      ]}>
-                        {homeTeamRatingChange >= 0 ? '+' : ''}{homeTeamRatingChange}
-                      </Text>
+                      <>
+                        <Text style={styles.teamName} numberOfLines={1}>{homeName}</Text>
+                        <Text style={[styles.ratingChange, delta>0?styles.ratingGain: delta<0?styles.ratingLoss:null]}>
+                          {delta>0?`+${delta}`: delta<0?`${delta}`: '0'}
+                        </Text>
+                      </>
                     );
                   })()}
+                  <Text style={styles.teamPlayers}>
+                    {match.homeTeam.playerIds?.length || 0} {getPlayersWord(match.homeTeam.playerIds?.length || 0)}
+                  </Text>
                 </View>
                 
                 <View style={styles.scoreContainer}>
                   <Text style={styles.score}>
-                    {match.homeScore} : {match.awayScore}
+                    {match.homeTeam.score || 0} : {match.awayTeam.score || 0}
                   </Text>
                 </View>
                 
                 <View style={styles.teamInfo}>
-                  <Text style={styles.teamName} numberOfLines={1}>
-                    {match.awayTeam.name.length > 12 ? match.awayTeam.name.substring(0, 12) + '...' : match.awayTeam.name}
-                  </Text>
-                  <Text style={styles.teamPlayers}>
-                    {match.awayTeam.playerIds.length} игрок{match.awayTeam.playerIds.length === 1 ? '' : match.awayTeam.playerIds.length < 5 ? 'а' : 'ов'}
-                  </Text>
                   {(() => {
-                    const awayTeamRatingChange = match.awayTeam.playerIds.reduce((total, playerId) => {
-                      return total + (match.ratingChanges[playerId] || 0);
-                    }, 0);
+                    const awayPlayers = safePlayers.filter(p => (match.awayTeam?.playerIds || []).includes(p.id));
+                    const strongest = awayPlayers.slice().sort((a,b) => b.rating - a.rating)[0];
+                    const awayName = strongest ? strongest.name : t('matches.team_b');
+                    const rc = (match as any).ratingChanges || {};
+                    const delta = (match.awayTeam?.playerIds || []).reduce((acc,id)=> acc + (rc[id] || 0), 0);
                     return (
-                      <Text style={[
-                        styles.ratingChange,
-                        awayTeamRatingChange >= 0 ? styles.ratingGain : styles.ratingLoss
-                      ]}>
-                        {awayTeamRatingChange >= 0 ? '+' : ''}{awayTeamRatingChange}
-                      </Text>
+                      <>
+                        <Text style={styles.teamName} numberOfLines={1}>{awayName}</Text>
+                        <Text style={[styles.ratingChange, delta>0?styles.ratingGain: delta<0?styles.ratingLoss:null]}>
+                          {delta>0?`+${delta}`: delta<0?`${delta}`: '0'}
+                        </Text>
+                      </>
                     );
                   })()}
+                  <Text style={styles.teamPlayers}>
+                    {match.awayTeam.playerIds?.length || 0} {getPlayersWord(match.awayTeam.playerIds?.length || 0)}
+                  </Text>
                 </View>
               </View>
               
@@ -696,12 +911,12 @@ const MatchesScreen: React.FC = () => {
                   const sortedMatches = matches.slice().sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
                   const newestMatch = sortedMatches[0];
                   
-                  // Показываем кнопку только для самого свежего матча
-                  return newestMatch && match.id === newestMatch.id && (
+                  // Показываем кнопку только для самого свежего матча и только для админа
+                  return newestMatch && match.id === newestMatch.id && isAdmin && (
                     <TouchableOpacity
                       style={styles.deleteMatchButton}
                       onPress={() => handleDeleteMatch(match.id)}>
-                      <Text style={styles.deleteMatchButtonText}>🗑️ Отмена</Text>
+                      <Text style={styles.deleteMatchButtonText}>🗑️ {t('matches.delete_match')}</Text>
                     </TouchableOpacity>
                   );
                 })()}
@@ -718,47 +933,66 @@ const MatchesScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#F5F6FA', // tokens: color.surface
   },
   scrollContainer: {
     flex: 1,
   },
   header: {
-    backgroundColor: '#2196F3',
-    padding: 20,
+    backgroundColor: '#FF9500', // оранжевый акцент из иконки
+    paddingHorizontal: 24,
+    paddingVertical: 12, // уменьшен с 24
     alignItems: 'center',
+    shadowColor: '#1B2940',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    elevation: 4,
   },
   title: {
-    fontSize: 16,
+    fontSize: 20, // уменьшен с 22
     fontWeight: 'bold',
-    color: '#ffffff',
-    marginBottom: 5,
+    color: '#FFFFFF', // tokens: color.onPrimary
+    marginBottom: 6, // уменьшен с 8
   },
   toggleParamsButton: {
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 15,
+    backgroundColor: 'rgba(255, 255, 255, 0.35)',
+    paddingHorizontal: 12, // уменьшен с 18
+    paddingVertical: 8, // уменьшен с 12
+    borderRadius: 12, // уменьшен с 14
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.5,
+    shadowRadius: 16,
+    elevation: 12,
+    borderTopWidth: 2,
+    borderTopColor: 'rgba(255, 255, 255, 0.7)',
+    borderLeftWidth: 1,
+    borderLeftColor: 'rgba(255, 255, 255, 0.5)',
+    borderRightWidth: 1,
+    borderRightColor: 'rgba(0, 0, 0, 0.3)',
+    borderBottomWidth: 3,
+    borderBottomColor: 'rgba(0, 0, 0, 0.5)',
   },
   toggleParamsText: {
-    color: '#ffffff',
-    fontSize: 10,
+    color: '#FFFFFF', // tokens: color.onPrimary
+    fontSize: 11, // уменьшен с 13
     fontWeight: 'bold',
   },
   calculationParams: {
-    backgroundColor: '#f0f8ff',
-    padding: 3,
-    margin: 2,
-    borderRadius: 4,
+    backgroundColor: '#FFFFFF',
+    padding: 8, // tokens: spacing.xs
+    margin: 8,
+    borderRadius: 12, // tokens: radii.sm
     borderWidth: 1,
-    borderColor: '#2196F3',
+    borderColor: '#E0E0E0',
     maxHeight: 140,
   },
   paramsTitle: {
-    fontSize: 10,
+    fontSize: 13, // tokens: typography.caption
     fontWeight: 'bold',
-    color: '#2196F3',
-    marginBottom: 2,
+    color: '#0051D5', // tokens: color.primary
+    marginBottom: 4,
     textAlign: 'center',
   },
   paramsList: {
@@ -781,12 +1015,12 @@ const styles = StyleSheet.create({
   },
   paramLabel: {
     fontSize: 7,
-    color: '#666',
+    color: '#355C7D', // tokens: color.inkSecondary
     fontWeight: 'bold',
   },
   paramValue: {
     fontSize: 8,
-    color: '#2196F3',
+    color: '#0051D5', // tokens: color.primary
     fontWeight: 'bold',
   },
   debugInfo: {
@@ -797,11 +1031,11 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
   },
   noParamsText: {
-    fontSize: 14,
-    color: '#999',
+    fontSize: 11, // уменьшен для длинных фраз
+    color: '#355C7D', // tokens: color.inkSecondary
     textAlign: 'center',
     fontStyle: 'italic',
-    padding: 20,
+    padding: 12,
   },
   
   // Дизайн выбора игроков
@@ -811,7 +1045,7 @@ const styles = StyleSheet.create({
   },
   teamsHeader: {
     flexDirection: 'row',
-    marginBottom: 5,
+    marginBottom: 3, // уменьшен с 5
   },
   teamsContainer: {
     flexDirection: 'row',
@@ -820,14 +1054,18 @@ const styles = StyleSheet.create({
   teamPlayersContainer: {
     flex: 1,
     marginHorizontal: 2,
+    minWidth: 0, // Для корректной работы flex
   },
   teamHeader: {
-    backgroundColor: '#ffffff',
-    padding: 5,
-    borderRadius: 6,
-    marginHorizontal: 2,
+    backgroundColor: '#FFFFFF',
+    padding: 8, // tokens: spacing.xs
+    borderRadius: 12, // tokens: radii.sm
+    marginHorizontal: 4,
     flex: 1,
-    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+    shadowColor: '#1B2940',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
   },
   instructionContainer: {
     backgroundColor: '#e3f2fd',
@@ -847,17 +1085,17 @@ const styles = StyleSheet.create({
     marginBottom: 5,
   },
   playersListTitle: {
-    fontSize: 12,
+    fontSize: 11, // уменьшен с 12
     fontWeight: 'bold',
     color: '#333',
-    marginBottom: 3,
+    marginBottom: 2, // уменьшен с 3
     textAlign: 'center',
   },
   playersList: {
     backgroundColor: '#ffffff',
     borderRadius: 6,
     padding: 3,
-    maxHeight: 150,
+    maxHeight: 250, // увеличен для 5 игроков
     overflow: 'hidden',
   },
   playerCard: {
@@ -871,6 +1109,17 @@ const styles = StyleSheet.create({
     borderColor: '#e0e0e0',
     minHeight: 32,
     justifyContent: 'space-between',
+  },
+  playerCardDisabled: {
+    backgroundColor: '#f0f0f0',
+    borderColor: '#d0d0d0',
+    opacity: 0.5,
+  },
+  textDisabled: {
+    color: '#999',
+  },
+  buttonDisabled: {
+    opacity: 0.3,
   },
   playerInfo: {
     flexDirection: 'row',
@@ -907,18 +1156,31 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   teamButton: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
     marginHorizontal: 3,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.6,
+    shadowRadius: 12,
+    elevation: 15,
+    borderTopWidth: 3,
+    borderTopColor: 'rgba(255, 255, 255, 0.8)',
+    borderLeftWidth: 2,
+    borderLeftColor: 'rgba(255, 255, 255, 0.6)',
+    borderRightWidth: 2,
+    borderRightColor: 'rgba(0, 0, 0, 0.3)',
+    borderBottomWidth: 4,
+    borderBottomColor: 'rgba(0, 0, 0, 0.5)',
   },
   teamAButton: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: '#0051D5', // синий из палитры
   },
   teamBButton: {
-    backgroundColor: '#2196F3',
+    backgroundColor: '#FF9500', // оранжевый из палитры
   },
   teamButtonText: {
     color: 'white',
@@ -941,16 +1203,16 @@ const styles = StyleSheet.create({
     marginBottom: 3,
   },
   teamTitle: {
-    fontSize: 12,
+    fontSize: 12, // уменьшен с 13
     fontWeight: 'bold',
-    color: '#333',
+    color: '#355C7D', // tokens: color.inkSecondary
     textAlign: 'center',
   },
   teamStats: {
-    fontSize: 10,
-    color: '#666',
+    fontSize: 9, // уменьшен с 11
+    color: '#355C7D', // tokens: color.inkSecondary
     textAlign: 'center',
-    marginTop: 1,
+    marginTop: 1, // уменьшен с 2
   },
   teamRating: {
     fontSize: 10,
@@ -959,11 +1221,14 @@ const styles = StyleSheet.create({
     marginTop: 1,
   },
   teamPlayersList: {
-    height: 120, // Фиксированная высота для списка команды
-    backgroundColor: '#ffffff',
-    borderRadius: 6,
-    padding: 3,
-    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+    height: 120,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12, // tokens: radii.sm
+    padding: 8, // tokens: spacing.xs
+    shadowColor: '#1B2940',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
   },
   teamPlayerCard: {
     flexDirection: 'row',
@@ -980,35 +1245,37 @@ const styles = StyleSheet.create({
   teamPlayerRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    flex: 1,
+    justifyContent: 'space-between',
   },
   teamPlayerNumber: {
     fontSize: 8,
     fontWeight: 'bold',
     color: '#666',
-    width: 12,
+    width: 15,
     textAlign: 'left',
+    marginRight: 2,
   },
   teamPlayerName: {
     fontSize: 8,
     color: '#333',
     fontWeight: 'bold',
-    width: 75,
-    marginLeft: 1,
-    marginRight: 1,
+    flex: 1,
+    marginRight: 2,
   },
   teamPlayerRating: {
     fontSize: 8,
     color: '#2196F3',
     width: 40,
     textAlign: 'center',
-    marginRight: 1,
+    marginRight: 2,
   },
   teamPlayerChange: {
     fontSize: 8,
     fontWeight: 'bold',
-    width: 40,
+    width: 45,
     textAlign: 'center',
-    marginRight: 1,
+    marginRight: 2,
   },
   ratingChangeContainer: {
     flexDirection: 'row',
@@ -1087,15 +1354,29 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   actionButton: {
-    padding: 8,
-    borderRadius: 4,
+    padding: 10,
+    borderRadius: 12,
     marginHorizontal: 2,
+    minWidth: 50,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.6,
+    shadowRadius: 16,
+    elevation: 15,
+    borderTopWidth: 3,
+    borderTopColor: 'rgba(255, 255, 255, 0.8)', // яркий верхний свет
+    borderLeftWidth: 2,
+    borderLeftColor: 'rgba(255, 255, 255, 0.5)',
+    borderRightWidth: 2,
+    borderRightColor: 'rgba(0, 0, 0, 0.3)',
+    borderBottomWidth: 4,
+    borderBottomColor: 'rgba(0, 0, 0, 0.5)', // глубокая нижняя тень
   },
   addToHomeButton: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: '#0051D5', // синий из палитры приложения
   },
   addToAwayButton: {
-    backgroundColor: '#FF9800',
+    backgroundColor: '#FF9500', // оранжевый из палитры приложения
   },
   actionButtonText: {
     fontSize: 16,
@@ -1113,18 +1394,21 @@ const styles = StyleSheet.create({
   
   // Счет
   scoreSection: {
-    backgroundColor: '#ffffff',
-    margin: 5,
-    padding: 8,
-    borderRadius: 6,
-    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+    backgroundColor: '#FFFFFF',
+    margin: 8, // уменьшен с 12
+    padding: 10, // уменьшен с 16
+    borderRadius: 20, // уменьшен с 24
+    shadowColor: '#1B2940',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
   },
   scoreTitle: {
-    fontSize: 14,
+    fontSize: 13, // уменьшен с 14
     fontWeight: 'bold',
     color: '#333',
     textAlign: 'center',
-    marginBottom: 5,
+    marginBottom: 4, // уменьшен с 5
   },
   scoreInputs: {
     flexDirection: 'row',
@@ -1133,14 +1417,15 @@ const styles = StyleSheet.create({
   },
   scoreInput: {
     borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 6,
-    padding: 6,
-    fontSize: 18,
+    borderColor: '#E0E0E0',
+    borderRadius: 10, // уменьшен с 12
+    padding: 8, // уменьшен с 12
+    fontSize: 22, // уменьшен с 24
     fontWeight: 'bold',
     textAlign: 'center',
-    width: 60,
+    width: 80, // увеличено с 70 для трёхзначных чисел
     marginHorizontal: 8,
+    color: '#0051D5', // tokens: color.primary
   },
   scoreSeparator: {
     fontSize: 18,
@@ -1153,15 +1438,25 @@ const styles = StyleSheet.create({
     padding: 5,
   },
   saveButton: {
-    backgroundColor: '#4CAF50',
-    padding: 10,
-    borderRadius: 6,
+    backgroundColor: '#FF9500', // оранжевый акцент
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    borderRadius: 24,
     alignItems: 'center',
-    marginBottom: 5,
+    marginBottom: 8,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 10 }, // максимальная 3D тень
+    shadowOpacity: 0.5,
+    shadowRadius: 20,
+    elevation: 12,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.3)', // 3D highlight
+    borderBottomWidth: 2,
+    borderBottomColor: 'rgba(0, 0, 0, 0.2)', // 3D shadow edge
   },
   saveButtonText: {
-    color: '#ffffff',
-    fontSize: 14,
+    color: '#FFFFFF', // tokens: color.onPrimary
+    fontSize: 16, // tokens: typography.body
     fontWeight: 'bold',
   },
   cancelButton: {
@@ -1194,11 +1489,15 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   matchCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 8,
-    padding: 10,
-    marginBottom: 6,
-    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24, // tokens: radii.lg
+    padding: 16, // tokens: spacing.md
+    marginBottom: 12, // tokens: spacing.sm
+    shadowColor: '#1B2940', // tokens: color.shadow
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12, // tokens: shadowStyle.soft
+    shadowRadius: 8,
+    elevation: 2,
   },
   matchHeader: {
     flexDirection: 'row',
@@ -1238,18 +1537,18 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   ratingGain: {
-    color: '#4CAF50',
+    color: '#34C759', // iOS green
   },
   ratingLoss: {
-    color: '#F44336',
+    color: '#FF3B30', // iOS red
   },
   scoreContainer: {
-    paddingHorizontal: 12,
+    paddingHorizontal: 16,
   },
   score: {
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: 'bold',
-    color: '#2196F3',
+    color: '#0051D5', // tokens: color.primary
   },
   matchActions: {
     flexDirection: 'row',
@@ -1257,16 +1556,61 @@ const styles = StyleSheet.create({
     gap: 20,
   },
   deleteMatchButton: {
-    backgroundColor: '#F44336',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
+    backgroundColor: '#FF3B30',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 12,
     marginLeft: 8,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 10 }, // максимальная 3D тень
+    shadowOpacity: 0.5,
+    shadowRadius: 20,
+    elevation: 12,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.3)', // 3D highlight
+    borderBottomWidth: 2,
+    borderBottomColor: 'rgba(0, 0, 0, 0.2)', // 3D shadow edge
   },
   deleteMatchButtonText: {
-    color: '#fff',
-    fontSize: 12,
+    color: '#FFFFFF', // tokens: color.onPrimary
+    fontSize: 13,
     fontWeight: 'bold',
+  },
+  saveButtonDisabled: {
+    opacity: 0.5,
+    backgroundColor: '#D3D3D3',
+    borderBottomColor: 'rgba(0, 0, 0, 0.08)',
+    borderTopColor: 'rgba(255, 255, 255, 0.2)',
+  },
+  saveButtonTextDisabled: {
+    color: '#5F5F5F',
+  },
+  removePlayerButton: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 10,
+    width: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#CCCCCC',
+    padding: 0,
+    margin: 0,
+  },
+  removePlayerButtonPlaceholder: {
+    width: 20,
+    height: 20,
+  },
+  removePlayerButtonText: {
+    color: '#FF3B30',
+    fontSize: 14,
+    fontWeight: 'bold',
+    lineHeight: 14,
+    textAlign: 'center',
+    includeFontPadding: false,
+    padding: 0,
+    margin: 0,
+    marginTop: -2,
   },
 });
 
