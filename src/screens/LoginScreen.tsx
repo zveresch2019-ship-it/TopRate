@@ -684,7 +684,7 @@ const styles = StyleSheet.create({
   },
   authContent: {
     alignItems: 'stretch',
-    gap: 6,
+    gap: 4,
   },
   title: {
     fontSize: 32,
@@ -805,9 +805,10 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   formAuth: {
-    marginTop: 4,
-    width: '95%',
-    maxWidth: 320,
+    marginTop: 0,
+    width: '100%',
+    maxWidth: 300,
+    alignSelf: 'center',
   },
   input: {
     backgroundColor: '#FFFFFF',
@@ -816,14 +817,14 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 15,
     fontSize: 16,
-    marginBottom: 10,
+    marginBottom: 8,
   },
   submitButton: {
     backgroundColor: '#FF9500',
     paddingVertical: 14,
     borderRadius: 8,
     alignItems: 'center',
-    marginTop: 8,
+    marginTop: 6,
     shadowColor: '#C05A00',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.25,
@@ -843,11 +844,11 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   backButton: {
-    marginTop: 18,
+    marginTop: 16,
     alignItems: 'center',
   },
   backButtonAuth: {
-    marginTop: 10,
+    marginTop: 6,
   },
   backButtonText: {
     color: '#666',
