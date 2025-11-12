@@ -455,31 +455,38 @@ const LoginScreen: React.FC<{
             const scale = helpWidth
               ? scrollX.interpolate({
                   inputRange,
-                  outputRange: [0.9, 1, 0.9],
+                  outputRange: [0.85, 1, 0.85],
                   extrapolate: 'clamp',
                 })
               : 1;
             const opacity = helpWidth
               ? scrollX.interpolate({
                   inputRange,
-                  outputRange: [0.4, 1, 0.4],
+                  outputRange: [0.35, 1, 0.35],
                   extrapolate: 'clamp',
                 })
               : 1;
             const rotateY = helpWidth
               ? scrollX.interpolate({
                   inputRange,
-                  outputRange: ['18deg', '0deg', '-18deg'],
+                  outputRange: ['24deg', '0deg', '-24deg'],
                   extrapolate: 'clamp',
                 })
               : '0deg';
             const translateX = helpWidth
               ? scrollX.interpolate({
                   inputRange,
-                  outputRange: [-30, 0, 30],
+                  outputRange: [-40, 0, 40],
                   extrapolate: 'clamp',
                 })
               : 0;
+            const shadowOpacity = helpWidth
+              ? scrollX.interpolate({
+                  inputRange,
+                  outputRange: [0.05, 0.2, 0.05],
+                  extrapolate: 'clamp',
+                })
+              : 0.2;
             return (
               <Animated.View
                 key={`help-${index}`}
@@ -494,6 +501,7 @@ const LoginScreen: React.FC<{
                       { scale },
                     ],
                     opacity,
+                    shadowOpacity,
                   },
                 ]}
               >
@@ -503,6 +511,24 @@ const LoginScreen: React.FC<{
           })}
         </Animated.ScrollView>
       </View>
+      {helpSlides.length > 1 && (
+        <View style={styles.helpDotsContainer}>
+          {helpSlides.map((_, index) => {
+            const forIndex = index === helpSlides.length ? 0 : index;
+            const dotOpacity = scrollX.interpolate({
+              inputRange: helpSlides.map((_, i) => i * helpWidth),
+              outputRange: helpSlides.map((_, i) => (i === forIndex ? 1 : 0.3)),
+              extrapolate: 'clamp',
+            });
+            return (
+              <Animated.View
+                key={`dot-${index}`}
+                style={[styles.helpDot, { opacity: dotOpacity }]}
+              />
+            );
+          })}
+        </View>
+      )}
       {helpSlides.length > 0 && (
         <Text style={styles.helpIndicator}>
           {language === 'en' ? 'Slide' : 'Слайд'} {activeSlide + 1}/{helpSlides.length}
@@ -705,9 +731,9 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 320,
     gap: 16,
-    alignItems: 'center',
+    alignItems: 'stretch',
     alignSelf: 'center',
-    marginTop: 18,
+    marginTop: 24,
   },
   modeButton: {
     backgroundColor: '#FF9500',
@@ -737,6 +763,7 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 12,
     opacity: 0.8,
+    textAlign: 'center',
   },
   form: {
     width: '100%',
@@ -800,9 +827,9 @@ const styles = StyleSheet.create({
     lineHeight: 19,
   },
   helpText: {
-    fontSize: 18,
-    color: '#3A3A3A',
-    lineHeight: 22,
+    fontSize: 16,
+    color: '#2F2F2F',
+    lineHeight: 20,
     textAlign: 'center',
   },
   helpScrollWrapper: {
@@ -821,6 +848,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 16,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    shadowColor: '#000',
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
   },
   helpIndicator: {
     marginTop: 12,
@@ -828,6 +861,19 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: '#1B2940',
     textAlign: 'center',
+  },
+  helpDotsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 10,
+    gap: 6,
+  },
+  helpDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#1B2940',
   },
 });
 
