@@ -11,6 +11,7 @@ import {
   ScrollView,
   NativeSyntheticEvent,
   NativeScrollEvent,
+  Animated,
 } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import { getAuthToken, authAPI } from '../utils/api';
@@ -52,6 +53,7 @@ const LoginScreen: React.FC<{
   const [helpWidth, setHelpWidth] = useState(0);
   const [activeSlide, setActiveSlide] = useState(0);
   const helpScrollRef = useRef<ScrollView>(null);
+  const scrollX = useRef(new Animated.Value(0)).current;
 
   const handleHelpLayout = useCallback((event: any) => {
     const { width } = event.nativeEvent.layout;
@@ -427,7 +429,7 @@ const LoginScreen: React.FC<{
   const renderHelp = () => (
     <View style={styles.helpContainer}>
       <View style={styles.helpScrollWrapper} onLayout={handleHelpLayout}>
-        <ScrollView
+        <Animated.ScrollView
           horizontal
           pagingEnabled
           showsHorizontalScrollIndicator={false}
@@ -435,17 +437,48 @@ const LoginScreen: React.FC<{
           style={styles.helpScroll}
           contentContainerStyle={styles.helpScrollContent}
           onMomentumScrollEnd={handleHelpMomentumEnd}
+          onScroll={Animated.event(
+            [{ nativeEvent: { contentOffset: { x: scrollX } } }],
+            { useNativeDriver: false }
+          )}
           scrollEventThrottle={16}
+          snapToInterval={helpWidth || undefined}
+          decelerationRate="fast"
         >
-          {extendedSlides.map((slide, index) => (
-            <View
-              key={`help-${index}`}
-              style={[styles.helpSlide, helpWidth ? { width: helpWidth } : null]}
-            >
-              <Text style={styles.helpText}>{slide}</Text>
-            </View>
-          ))}
-        </ScrollView>
+          {extendedSlides.map((slide, index) => {
+            const inputRange = [
+              (index - 1) * helpWidth,
+              index * helpWidth,
+              (index + 1) * helpWidth,
+            ];
+            const scale = helpWidth
+              ? scrollX.interpolate({
+                  inputRange,
+                  outputRange: [0.92, 1, 0.92],
+                  extrapolate: 'clamp',
+                })
+              : 1;
+            const opacity = helpWidth
+              ? scrollX.interpolate({
+                  inputRange,
+                  outputRange: [0.6, 1, 0.6],
+                  extrapolate: 'clamp',
+                })
+              : 1;
+            return (
+              <Animated.View
+                key={`help-${index}`}
+                style={[
+                  styles.helpSlide,
+                  helpWidth ? { width: helpWidth } : null,
+                  { transform: [{ scale }], opacity },
+                ]}
+              >
+                <Text style={styles.helpText}>{slide}</Text>
+              </Animated.View>
+            );
+          })}
+        </Animated.ScrollView>
       </View>
       {helpSlides.length > 0 && (
         <Text style={styles.helpIndicator}>
@@ -745,7 +778,7 @@ const styles = StyleSheet.create({
   helpText: {
     fontSize: 18,
     color: '#3A3A3A',
-    lineHeight: 26,
+    lineHeight: 22,
     textAlign: 'center',
   },
   helpScrollWrapper: {
