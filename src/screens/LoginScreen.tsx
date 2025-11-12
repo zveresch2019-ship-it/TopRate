@@ -40,7 +40,9 @@ const LoginScreen: React.FC<{
       t('help.initial_rating'),
       t('help.rating_changes'),
       t('help.change_factors'),
-    ].filter(Boolean)
+    ]
+      .filter(Boolean)
+      .map(text => text.replace(/^•\s*/, '').trim())
   ), [t]);
 
   const extendedSlides = useMemo(() => (
@@ -620,12 +622,12 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   helpContainer: {
-    width: 540,
+    width: 560,
     maxWidth: '100%',
     alignSelf: 'center',
-    marginTop: -4,
-    height: 360,
-    maxHeight: 360,
+    marginTop: -6,
+    height: 480,
+    maxHeight: 480,
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
     paddingTop: 0,
@@ -748,7 +750,7 @@ const styles = StyleSheet.create({
   },
   helpScrollWrapper: {
     flexGrow: 1,
-    height: '80%',
+    height: '85%',
     overflow: 'hidden',
   },
   helpScroll: {
@@ -761,7 +763,7 @@ const styles = StyleSheet.create({
   helpSlide: {
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 12,
+    paddingHorizontal: 16,
   },
   helpIndicator: {
     marginTop: 12,
