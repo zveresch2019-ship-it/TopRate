@@ -396,16 +396,19 @@ const LoginScreen: React.FC<{
       t('help.rating_changes'),
       t('help.change_factors'),
     ].filter(Boolean);
-    return lines.join('\n');
+    return lines.join('\n\n');
   }, [t]);
 
   const renderHelp = () => (
     <View style={styles.helpContainer}>
-      <View style={styles.helpScroll}>
-        <View style={styles.helpScrollContent}>
-          <Text style={styles.helpText}>{helpTextString}</Text>
-        </View>
-      </View>
+      <ScrollView
+        style={styles.helpScroll}
+        contentContainerStyle={styles.helpScrollContent}
+        showsVerticalScrollIndicator
+        persistentScrollbar
+      >
+        <Text style={styles.helpText}>{helpTextString}</Text>
+      </ScrollView>
     </View>
   );
 
@@ -434,16 +437,16 @@ const LoginScreen: React.FC<{
                 style={styles.modeButton}
                 onPress={() => handleModeSelect('login')}
               >
-                <Text style={styles.modeButtonText}>Log In</Text>
-                <Text style={styles.modeButtonSubtext}>For existing users</Text>
+                <Text style={styles.modeButtonText}>{language === 'en' ? 'Log In' : 'Войти'}</Text>
+                <Text style={styles.modeButtonSubtext}>{language === 'en' ? 'For existing users' : 'Для уже зарегистрированных'}</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={styles.modeButton}
+                style={[styles.modeButton, styles.modeButtonSecondary]}
                 onPress={() => handleModeSelect('register')}
               >
-                <Text style={styles.modeButtonText}>New User</Text>
-                <Text style={styles.modeButtonSubtext}>Create account</Text>
+                <Text style={styles.modeButtonText}>{language === 'en' ? 'New User' : 'Новый пользователь'}</Text>
+                <Text style={styles.modeButtonSubtext}>{language === 'en' ? 'Create account' : 'Создать аккаунт'}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -472,7 +475,9 @@ const LoginScreen: React.FC<{
           </View>
           {renderHelp()}
           <Text style={styles.subtitle}>
-            {mode === 'register' ? 'Create Account' : 'Log In'}
+            {mode === 'register'
+              ? language === 'en' ? 'Create Account' : 'Создать аккаунт'
+              : language === 'en' ? 'Log In' : 'Вход'}
           </Text>
 
           <View style={styles.form}>
@@ -500,10 +505,10 @@ const LoginScreen: React.FC<{
             >
               <Text style={styles.submitButtonText}>
                 {isLoading
-                  ? 'Loading...'
+                  ? language === 'en' ? 'Loading...' : 'Загрузка...'
                   : mode === 'register'
-                  ? 'Create Account'
-                  : 'Log In'}
+                  ? language === 'en' ? 'Create Account' : 'Создать аккаунт'
+                  : language === 'en' ? 'Log In' : 'Войти'}
               </Text>
             </TouchableOpacity>
 
@@ -515,7 +520,9 @@ const LoginScreen: React.FC<{
                 setPassword('');
               }}
             >
-              <Text style={styles.backButtonText}>← Back</Text>
+              <Text style={styles.backButtonText}>
+                {language === 'en' ? '← Back' : '← Назад'}
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -616,6 +623,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
+  },
+  modeButtonSecondary: {
+    marginTop: 4,
   },
   modeButtonText: {
     color: '#FFFFFF',
