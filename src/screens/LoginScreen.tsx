@@ -839,6 +839,7 @@ const styles = StyleSheet.create({
     height: '85%',
     overflow: 'hidden',
     justifyContent: 'center',
+    paddingTop: 20,
   },
   helpScroll: {
     width: '100%',
@@ -851,6 +852,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 16,
+    marginVertical: 10,
     backgroundColor: '#F3F6FF',
     borderRadius: 14,
     shadowColor: '#000',
