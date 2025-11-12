@@ -683,7 +683,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   authContent: {
-    alignItems: 'stretch',
+    alignItems: 'center',
     gap: 4,
   },
   title: {
@@ -809,6 +809,7 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 300,
     alignSelf: 'center',
+    alignItems: 'stretch',
   },
   input: {
     backgroundColor: '#FFFFFF',
@@ -817,14 +818,14 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 15,
     fontSize: 16,
-    marginBottom: 8,
+    marginBottom: 6,
   },
   submitButton: {
     backgroundColor: '#FF9500',
     paddingVertical: 14,
     borderRadius: 8,
     alignItems: 'center',
-    marginTop: 6,
+    marginTop: 4,
     shadowColor: '#C05A00',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.25,
@@ -848,7 +849,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   backButtonAuth: {
-    marginTop: 6,
+    marginTop: 4,
   },
   backButtonText: {
     color: '#666',
