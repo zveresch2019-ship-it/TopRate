@@ -527,7 +527,7 @@ const styles = StyleSheet.create({
   },
   content: {
     width: '100%',
-    maxWidth: 560,
+    maxWidth: 580,
     alignItems: 'stretch',
     gap: 8,
   },
@@ -539,7 +539,7 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   helpContainer: {
-    width: 540,
+    width: 550,
     maxWidth: '100%',
     alignSelf: 'center',
     marginTop: -8,
