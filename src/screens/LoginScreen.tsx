@@ -758,6 +758,8 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     marginBottom: 2,
+    textAlign: 'center',
+    alignSelf: 'stretch',
   },
   modeButtonSubtext: {
     color: '#FFFFFF',
@@ -848,7 +850,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 16,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F3F6FF',
     borderRadius: 14,
     shadowColor: '#000',
     shadowOpacity: 0.15,
