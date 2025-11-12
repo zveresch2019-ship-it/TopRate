@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -25,7 +25,11 @@ const LoginScreen: React.FC<{
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { login, register, currentUser } = useAuth();
-  const { t } = useLanguage();
+  const { t, language, setLanguage } = useLanguage();
+
+  const toggleLanguage = useCallback(() => {
+    setLanguage(language === 'en' ? 'ru' : 'en');
+  }, [language, setLanguage]);
 
   const helpSections = useMemo(() => {
     const howWorksItems = [
@@ -418,7 +422,12 @@ const LoginScreen: React.FC<{
           keyboardShouldPersistTaps="handled"
         >
           <View style={styles.content}>
-            <Text style={styles.title}>🏆 TopRate</Text>
+            <View style={styles.headerRow}>
+              <Text style={styles.title}>🏆 TopRate</Text>
+              <TouchableOpacity style={styles.langButton} onPress={toggleLanguage}>
+                <Text style={styles.langButtonText}>{language === 'en' ? 'EN' : 'RU'}</Text>
+              </TouchableOpacity>
+            </View>
             {renderHelp()}
             <View style={styles.modeSelectionContainer}>
               <TouchableOpacity
@@ -455,7 +464,12 @@ const LoginScreen: React.FC<{
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.content}>
-          <Text style={styles.title}>🏆 TopRate</Text>
+          <View style={styles.headerRow}>
+            <Text style={styles.title}>🏆 TopRate</Text>
+            <TouchableOpacity style={styles.langButton} onPress={toggleLanguage}>
+              <Text style={styles.langButtonText}>{language === 'en' ? 'EN' : 'RU'}</Text>
+            </TouchableOpacity>
+          </View>
           {renderHelp()}
           <Text style={styles.subtitle}>
             {mode === 'register' ? 'Create Account' : 'Log In'}
@@ -537,6 +551,25 @@ const styles = StyleSheet.create({
     color: '#FF9500',
     marginTop: 8,
     marginBottom: 6,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  langButton: {
+    minWidth: 62,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 20,
+    backgroundColor: '#1B2940',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  langButtonText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '600',
   },
   helpContainer: {
     width: 550,

@@ -413,8 +413,8 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) 
     const loadLanguage = async () => {
       try {
         const savedLanguage = await AsyncStorage.getItem('app_language');
-        if (savedLanguage === 'en') {
-          setLanguageState('en');
+        if (savedLanguage === 'en' || savedLanguage === 'ru') {
+          setLanguageState(savedLanguage as Language);
         } else {
           setLanguageState(DEFAULT_LANGUAGE);
           await AsyncStorage.setItem('app_language', DEFAULT_LANGUAGE);
@@ -429,7 +429,7 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) 
   // Сохраняем язык при изменении
   const setLanguage = async (lang: Language) => {
     try {
-      const nextLanguage: Language = lang === 'en' ? 'en' : DEFAULT_LANGUAGE;
+      const nextLanguage: Language = lang === 'ru' ? 'ru' : 'en';
       setLanguageState(nextLanguage);
       await AsyncStorage.setItem('app_language', nextLanguage);
     } catch (error) {
