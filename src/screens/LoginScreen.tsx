@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,8 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  NativeSyntheticEvent,
+  NativeScrollEvent,
 } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import { getAuthToken, authAPI } from '../utils/api';
@@ -31,26 +33,47 @@ const LoginScreen: React.FC<{
     setLanguage(language === 'en' ? 'ru' : 'en');
   }, [language, setLanguage]);
 
-  const helpSections = useMemo(() => {
-    const howWorksItems = [
+  const helpSlides = useMemo(() => (
+    [
+      t('help.purpose'),
       t('help.add_players'),
       t('help.initial_rating'),
       t('help.rating_changes'),
       t('help.change_factors'),
-    ].filter(Boolean);
+    ].filter(Boolean)
+  ), [t]);
 
-    const extraItems = [t('help.rating_change_only_matches')].filter(Boolean);
+  const extendedSlides = useMemo(() => (
+    helpSlides.length > 0 ? [...helpSlides, helpSlides[0]] : []
+  ), [helpSlides]);
 
-    const sections: Array<{ title?: string; items: string[] }> = [];
-    if (howWorksItems.length > 0) {
-      sections.push({ title: t('help.how_works'), items: howWorksItems });
+  const [helpWidth, setHelpWidth] = useState(0);
+  const [activeSlide, setActiveSlide] = useState(0);
+  const helpScrollRef = useRef<ScrollView>(null);
+
+  const handleHelpLayout = useCallback((event: any) => {
+    const { width } = event.nativeEvent.layout;
+    if (width !== helpWidth) {
+      setHelpWidth(width);
+      setActiveSlide(0);
+      requestAnimationFrame(() => {
+        helpScrollRef.current?.scrollTo({ x: 0, animated: false });
+      });
     }
-    if (extraItems.length > 0) {
-      const extraTitle = t('help.seasons_title');
-      sections.push({ title: extraTitle || undefined, items: extraItems });
+  }, [helpWidth]);
+
+  const handleHelpMomentumEnd = useCallback((event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    if (!helpWidth || helpSlides.length === 0) {
+      return;
     }
-    return sections;
-  }, [t]);
+    const offsetX = event.nativeEvent.contentOffset.x;
+    let index = Math.round(offsetX / helpWidth);
+    if (index >= helpSlides.length) {
+      helpScrollRef.current?.scrollTo({ x: 0, animated: false });
+      index = 0;
+    }
+    setActiveSlide(index);
+  }, [helpWidth, helpSlides.length]);
 
   // Clear form when switching modes
   React.useEffect(() => {
@@ -401,14 +424,32 @@ const LoginScreen: React.FC<{
 
   const renderHelp = () => (
     <View style={styles.helpContainer}>
-      <ScrollView
-        style={styles.helpScroll}
-        contentContainerStyle={styles.helpScrollContent}
-        showsVerticalScrollIndicator
-        persistentScrollbar
-      >
-        <Text style={styles.helpText}>{helpTextString}</Text>
-      </ScrollView>
+      <View style={styles.helpScrollWrapper} onLayout={handleHelpLayout}>
+        <ScrollView
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          ref={helpScrollRef}
+          style={styles.helpScroll}
+          contentContainerStyle={styles.helpScrollContent}
+          onMomentumScrollEnd={handleHelpMomentumEnd}
+          scrollEventThrottle={16}
+        >
+          {extendedSlides.map((slide, index) => (
+            <View
+              key={`help-${index}`}
+              style={[styles.helpSlide, helpWidth ? { width: helpWidth } : null]}
+            >
+              <Text style={styles.helpText}>{slide}</Text>
+            </View>
+          ))}
+        </ScrollView>
+      </View>
+      {helpSlides.length > 0 && (
+        <Text style={styles.helpIndicator}>
+          {language === 'en' ? 'Slide' : 'Слайд'} {activeSlide + 1}/{helpSlides.length}
+        </Text>
+      )}
     </View>
   );
 
@@ -625,7 +666,7 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   modeButtonSecondary: {
-    marginTop: 4,
+    marginTop: 0,
   },
   modeButtonText: {
     color: '#FFFFFF',
@@ -700,18 +741,34 @@ const styles = StyleSheet.create({
     lineHeight: 19,
   },
   helpText: {
-    fontSize: 12,
-    color: '#555',
-    lineHeight: 18,
+    fontSize: 14,
+    color: '#444',
+    lineHeight: 22,
     textAlign: 'justify',
   },
   helpScroll: {
     width: '100%',
-    height: '100%',
+    flexGrow: 0,
   },
   helpScrollContent: {
-    paddingRight: 4,
-    paddingVertical: 8,
+    paddingRight: 0,
+    paddingVertical: 16,
+    alignItems: 'center',
+  },
+  helpScrollWrapper: {
+    flexGrow: 1,
+    flexBasis: 'auto',
+  },
+  helpSlide: {
+    justifyContent: 'center',
+    paddingHorizontal: 8,
+  },
+  helpIndicator: {
+    marginTop: 12,
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#1B2940',
+    textAlign: 'center',
   },
 });
 
