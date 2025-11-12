@@ -34,6 +34,8 @@ const LoginScreen: React.FC<{
     setLanguage(language === 'en' ? 'ru' : 'en');
   }, [language, setLanguage]);
 
+  const isAuthMode = mode === 'login' || mode === 'register';
+
   const helpSlides = useMemo(() => (
     [
       t('help.purpose'),
@@ -591,21 +593,24 @@ const LoginScreen: React.FC<{
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
       >
-        <View style={styles.content}>
-          <View style={styles.headerRow}>
-            <Text style={styles.title}>🏆 TopRate</Text>
-            <TouchableOpacity style={styles.langButton} onPress={toggleLanguage}>
+        <View style={[styles.content, isAuthMode && styles.authContent]}>
+          <View style={[styles.headerRow, isAuthMode && styles.headerRowAuth]}>
+            <Text style={[styles.title, isAuthMode && styles.titleAuth]}>🏆 TopRate</Text>
+            <TouchableOpacity
+              style={[styles.langButton, isAuthMode && styles.langButtonAuth]}
+              onPress={toggleLanguage}
+            >
               <Text style={styles.langButtonText}>{language === 'en' ? 'EN' : 'RU'}</Text>
             </TouchableOpacity>
           </View>
           {renderHelp()}
-          <Text style={styles.subtitle}>
+          <Text style={[styles.subtitle, isAuthMode && styles.subtitleAuth]}>
             {mode === 'register'
               ? language === 'en' ? 'Create Account' : 'Создать аккаунт'
               : language === 'en' ? 'Log In' : 'Вход'}
           </Text>
 
-          <View style={styles.form}>
+          <View style={[styles.form, isAuthMode && styles.formAuth]}>
             <TextInput
               style={styles.input}
               placeholder="Username"
@@ -638,7 +643,7 @@ const LoginScreen: React.FC<{
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={styles.backButton}
+              style={[styles.backButton, isAuthMode && styles.backButtonAuth]}
               onPress={() => {
                 setMode('select');
                 setUsername('');
@@ -677,6 +682,10 @@ const styles = StyleSheet.create({
     alignItems: 'stretch',
     gap: 8,
   },
+  authContent: {
+    alignItems: 'center',
+    gap: 6,
+  },
   title: {
     fontSize: 32,
     fontWeight: 'bold',
@@ -684,10 +693,20 @@ const styles = StyleSheet.create({
     marginTop: 8,
     marginBottom: 6,
   },
+  titleAuth: {
+    marginTop: 0,
+    marginBottom: 4,
+    textAlign: 'center',
+  },
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+  },
+  headerRowAuth: {
+    justifyContent: 'center',
+    width: '100%',
+    position: 'relative',
   },
   langButton: {
     minWidth: 62,
@@ -702,6 +721,10 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 13,
     fontWeight: '600',
+  },
+  langButtonAuth: {
+    position: 'absolute',
+    right: 0,
   },
   helpContainer: {
     width: 560,
@@ -726,6 +749,11 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#333',
     marginTop: 6,
+  },
+  subtitleAuth: {
+    marginTop: 2,
+    marginBottom: 8,
+    textAlign: 'center',
   },
   modeSelectionContainer: {
     width: '100%',
@@ -773,6 +801,11 @@ const styles = StyleSheet.create({
     marginTop: 6,
     gap: 12,
   },
+  formAuth: {
+    marginTop: 4,
+    width: '95%',
+    maxWidth: 320,
+  },
   input: {
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
@@ -780,14 +813,14 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 15,
     fontSize: 16,
-    marginBottom: 15,
+    marginBottom: 10,
   },
   submitButton: {
     backgroundColor: '#FF9500',
-    paddingVertical: 15,
+    paddingVertical: 14,
     borderRadius: 8,
     alignItems: 'center',
-    marginTop: 10,
+    marginTop: 8,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -803,8 +836,11 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   backButton: {
-    marginTop: 20,
+    marginTop: 18,
     alignItems: 'center',
+  },
+  backButtonAuth: {
+    marginTop: 10,
   },
   backButtonText: {
     color: '#666',
