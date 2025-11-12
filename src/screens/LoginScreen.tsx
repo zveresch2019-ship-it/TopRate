@@ -838,6 +838,7 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     height: '85%',
     overflow: 'hidden',
+    justifyContent: 'center',
   },
   helpScroll: {
     width: '100%',
@@ -856,6 +857,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.15,
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 6 },
+    paddingVertical: 12,
   },
   helpIndicator: {
     marginTop: 12,
