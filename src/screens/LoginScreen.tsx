@@ -397,15 +397,11 @@ const LoginScreen: React.FC<{
 
   const renderHelp = () => (
     <View style={styles.helpContainer}>
-      <ScrollView
-        style={styles.helpScroll}
-        contentContainerStyle={styles.helpScrollContent}
-        showsVerticalScrollIndicator
-        persistentScrollbar
-        nestedScrollEnabled
-      >
-        <Text style={styles.helpText}>{helpTextString}</Text>
-      </ScrollView>
+      <View style={styles.helpScroll}>
+        <View style={styles.helpScrollContent}>
+          <Text style={styles.helpText}>{helpTextString}</Text>
+        </View>
+      </View>
     </View>
   );
 
@@ -543,8 +539,8 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   helpContainer: {
-    width: '100%',
-    maxWidth: 540,
+    width: 540,
+    maxWidth: '100%',
     alignSelf: 'center',
     marginTop: -8,
     height: 660,
