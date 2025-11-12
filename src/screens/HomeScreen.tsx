@@ -441,29 +441,13 @@ const HomeScreen: React.FC<HomeScreenProps> = ({navigation}) => {
           </View>
           
           <ScrollView style={styles.helpModalBody} showsVerticalScrollIndicator={true}>
-            <Text style={styles.helpPurpose}>{t('help.purpose')}</Text>
-
             <View style={styles.helpSectionWrapper}>
-              <Text style={styles.helpSectionTitle}>{t('help.how_works')}</Text>
-              {[t('help.add_players'), t('help.initial_rating'), t('help.rating_changes'), t('help.change_factors')]
+              {[t('help.main_tab'), t('help.ratings_tab'), t('help.matches_tab')]
                 .filter(Boolean)
                 .map((item, index) => (
-                  <Text key={`help-how-${index}`} style={styles.helpText}>{item}</Text>
+                  <Text key={`help-main-${index}`} style={styles.helpText}>{item}</Text>
                 ))}
             </View>
-
-            {[t('help.seasons_title')].filter(Boolean).length > 0 || t('help.rating_change_only_matches') ? (
-              <View style={styles.helpSectionWrapper}>
-                {t('help.seasons_title') ? (
-                  <Text style={styles.helpSectionTitle}>{t('help.seasons_title')}</Text>
-                ) : null}
-                {[t('help.rating_change_only_matches')]
-                  .filter(Boolean)
-                  .map((item, index) => (
-                    <Text key={`help-extra-${index}`} style={styles.helpText}>{item}</Text>
-                  ))}
-              </View>
-            ) : null}
           </ScrollView>
         </View>
       </View>
