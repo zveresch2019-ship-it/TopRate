@@ -909,7 +909,7 @@ const styles = StyleSheet.create({
     paddingBottom: 10,
   },
   helpModalTitle: {
-    fontSize: 22, // tokens: typography.headline
+    fontSize: 18, // tokens: typography.title
     fontWeight: 'bold',
     color: '#0051D5', // tokens: color.primary
     flex: 1,
