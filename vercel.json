@@ -1,12 +1,21 @@
 {
-  "installCommand": "npm install",
-  "buildCommand": "npm run build:web",
-  "outputDirectory": "web-build",
-  "rewrites": [
+  "version": 2,
+  "builds": [
     {
-      "source": "/(.*)",
-      "destination": "/index.html"
+      "src": "package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "web-build"
+      }
     }
-  ]
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
+    }
+  ],
+  "buildCommand": "npm run build:web",
+  "outputDirectory": "web-build"
 }
 
